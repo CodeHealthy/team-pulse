@@ -12,6 +12,7 @@ import { createHealthFunctions } from "./functions/health.js";
 import { createInvitationFunctions } from "./functions/invitations.js";
 import { createProjectFunctions } from "./functions/projects.js";
 import { createRealtimeFunctions } from "./functions/realtime.js";
+import { createSettingsFunctions } from "./functions/settings.js";
 import { createTaskFunctions } from "./functions/tasks.js";
 import { createWorkspaceFunctions } from "./functions/workspaces.js";
 import { createActivityFunctions } from "./functions/workspace-activity.js";
@@ -69,6 +70,11 @@ const healthFunctions =
     createHealthFunctions({
         appName: APP_METADATA.NAME,
         database,
+    });
+
+const settingsFunctions =
+    createSettingsFunctions({
+        UserRepository: userRepository,
     });
 
 const workspaceFunctions =
@@ -193,6 +199,7 @@ const apiRouter = createApiRouter({
     invitationFunctions,
     projectFunctions,
     searchFunctions,
+    settingsFunctions,
     taskFunctions,
     workspaceFunctions,
 });

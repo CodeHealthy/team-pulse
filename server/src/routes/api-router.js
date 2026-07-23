@@ -11,6 +11,7 @@ import { createHealthRouter } from "./health.routes.js";
 import { createInvitationRouter } from "./invitations.routes.js";
 import { createNotificationRouter } from "./notifications.routes.js";
 import { createProjectRouter } from "./projects.routes.js";
+import { createSettingsRouter } from "./settings.routes.js";
 import { createTaskRouter } from "./tasks.routes.js";
 import { createWorkspaceRouter } from "./workspaces.routes.js";
 
@@ -56,6 +57,10 @@ export function createApiRouter(functions) {
     router.use(
         "/notifications",
         createNotificationRouter(functions),
+    );
+    router.use(
+        "/settings",
+        createSettingsRouter(functions),
     );
     router.use(
         "/health",

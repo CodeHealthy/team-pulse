@@ -2,10 +2,15 @@ import { useEffect, useState } from "react";
 import { SOCKET_EVENTS } from "@teampulse/contracts/socket-events";
 import { apiRequest } from "../auth/auth-api";
 import { socket } from "../../realtime/socket";
+import {
+  formatDate,
+  formatDateTime,
+} from "../../shared/utils/date-format";
 
 export default function WorkspaceToolsPanel({
   workspaceId,
   members,
+  datePreferences,
   onClose,
 }) {
   const [tab, setTab] = useState("analytics");
@@ -90,8 +95,8 @@ export default function WorkspaceToolsPanel({
           ))}
         </div>
       )}
-      {tab === "calendar" && <div className="tool-list">{(data?.tasks ?? []).map((task) => <article key={task.id}><small>{new Date(task.dueDate).toLocaleDateString()}</small><strong>{task.title}</strong></article>)}</div>}
-      {tab === "activity" && <div className="tool-list">{(data?.activity ?? []).map((item) => <article key={item.id}><small>{new Date(item.createdAt).toLocaleString()}</small><strong>{item.actor?.name ?? "Member"} · {item.action}</strong></article>)}</div>}
+      {tab === "calendar" && <div className="tool-list">{(data?.tasks ?? []).map((task) => <article key={task.id}><small>{formatDate(task.dueDate, datePreferences)}</small><strong>{task.title}</strong></article>)}</div>}
+      {tab === "activity" && <div className="tool-list">{(data?.activity ?? []).map((item) => <article key={item.id}><small>{formatDateTime(item.createdAt, datePreferences)}</small><strong>{item.actor?.name ?? "Member"} · {item.action}</strong></article>)}</div>}
       {tab === "direct" && (
         <div className="direct-tools">
           <select defaultValue="" onChange={async (event) => {

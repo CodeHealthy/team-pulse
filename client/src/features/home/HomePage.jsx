@@ -13,6 +13,7 @@ import {
 import { logoutUser } from "../auth/auth-slice";
 import CollaborationPanel from "../collaboration/CollaborationPanel";
 import WorkspaceToolsPanel from "../insights/WorkspaceToolsPanel";
+import SettingsPanel from "../settings/SettingsPanel";
 import { apiRequest } from "../auth/auth-api";
 import {
   addComment,
@@ -41,6 +42,7 @@ import {
   realtimeTaskCreated,
   realtimeTaskDeleted,
   realtimeTaskUpdated,
+  syncCurrentUserProfile,
 } from "../workspaces/workspace-slice";
 import { socket } from "../../realtime/socket";
 import Board from "../board/components/Board";
@@ -78,6 +80,10 @@ export default function HomePage() {
     useState("all");
   const collaboration = useSelector(
     (state) => state.collaboration,
+  );
+  const previousOnlineVisibility = useRef(
+    user.privacySettings?.showOnlineStatus ??
+      true,
   );
 
   const selectedWorkspace =
@@ -146,6 +152,54 @@ export default function HomePage() {
     };
   }, [dispatch, workspace.selectedWorkspaceId]);
 
+  useEffect(() => {
+    document.documentElement.dataset.density =
+      user.personalSettings?.density ??
+      "comfortable";
+  }, [user.personalSettings?.density]);
+
+  useEffect(() => {
+    dispatch(syncCurrentUserProfile(user));
+  }, [dispatch, user, workspace.members.length]);
+
+  useEffect(() => {
+    const visibility =
+      user.privacySettings?.showOnlineStatus ??
+      true;
+
+    if (
+      previousOnlineVisibility.current ===
+      visibility
+    ) {
+      return undefined;
+    }
+
+    previousOnlineVisibility.current = visibility;
+    const workspaceId =
+      workspace.selectedWorkspaceId;
+
+    if (!workspaceId) {
+      return undefined;
+    }
+
+    function rejoinWorkspace() {
+      socket.emit(SOCKET_EVENTS.WORKSPACE.JOIN, {
+        workspaceId,
+      });
+    }
+
+    socket.once("connect", rejoinWorkspace);
+    socket.disconnect();
+    socket.connect();
+
+    return () => {
+      socket.off("connect", rejoinWorkspace);
+    };
+  }, [
+    user.privacySettings?.showOnlineStatus,
+    workspace.selectedWorkspaceId,
+  ]);
+
   const closeModal = useCallback(() => {
     if (modal === "invite") {
       dispatch(clearInvitationToken());
@@ -155,6 +209,10 @@ export default function HomePage() {
     setTaskForm(EMPTY_TASK);
     dispatch(clearWorkspaceError());
   }, [dispatch, modal]);
+
+  const closeSidePanel = useCallback(() => {
+    setSidePanel(null);
+  }, []);
 
   function openNewTask(columnId) {
     setActiveColumnId(columnId);
@@ -260,6 +318,9 @@ export default function HomePage() {
         onOpenProject={(projectId) =>
           dispatch(openProject(projectId))
         }
+        onOpenSettings={() =>
+          setSidePanel("settings")
+        }
         onSignOut={() => dispatch(logoutUser())}
       />
 
@@ -321,6 +382,9 @@ export default function HomePage() {
                 columns={workspace.columns}
                 tasks={workspace.tasks}
                 members={workspace.members}
+                datePreferences={
+                  user.personalSettings
+                }
                 query={boardQuery}
                 priority={boardPriority}
                 onNewTask={openNewTask}
@@ -444,10 +508,14 @@ export default function HomePage() {
         </Modal>
       )}
       {sidePanel && (
-        sidePanel === "insights" ? (
-          <WorkspaceToolsPanel workspaceId={workspace.selectedWorkspaceId} members={workspace.members} onClose={() => setSidePanel(null)} />
+        sidePanel === "settings" ? (
+          <SettingsPanel
+            onClose={closeSidePanel}
+          />
+        ) : sidePanel === "insights" ? (
+          <WorkspaceToolsPanel workspaceId={workspace.selectedWorkspaceId} members={workspace.members} datePreferences={user.personalSettings} onClose={closeSidePanel} />
         ) : (
-          <CollaborationPanel mode={sidePanel} workspaceId={workspace.selectedWorkspaceId} onClose={() => setSidePanel(null)} />
+          <CollaborationPanel mode={sidePanel} workspaceId={workspace.selectedWorkspaceId} datePreferences={user.personalSettings} onClose={closeSidePanel} />
         )
       )}
     </div>

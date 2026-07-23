@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 import Badge from "../../../shared/components/ui/Badge";
+import { formatDate } from "../../../shared/utils/date-format";
 
 const PRIORITY_TONES = {
   low: "success",
@@ -73,6 +74,7 @@ function getChecklistProgress(task) {
 export default function TaskCard({
   task,
   members,
+  datePreferences,
   dragging,
   onDragStart,
   onDragEnd,
@@ -135,13 +137,16 @@ export default function TaskCard({
               className={
                 overdue ? "task-due overdue" : "task-due"
               }
-              title={`Due ${dueDate.toLocaleDateString()}`}
+              title={`Due ${formatDate(
+                dueDate,
+                datePreferences,
+              )}`}
             >
               <CalendarDays aria-hidden="true" />
-              {dueDate.toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-              })}
+              {formatDate(
+                dueDate,
+                datePreferences,
+              )}
             </span>
           )}
           {commentCount > 0 && (

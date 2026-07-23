@@ -187,6 +187,34 @@ const slice = createSlice({
     clearInvitationToken(state) {
       state.invitationToken = null;
     },
+    syncCurrentUserProfile(state, action) {
+      const user = action.payload;
+      const membership = state.members.find(
+        (member) => member.userId === user.id,
+      );
+
+      if (!membership) {
+        return;
+      }
+
+      membership.user = {
+        ...(membership.user ?? {}),
+        id: user.id,
+        name: user.name,
+        jobTitle: user.jobTitle ?? "",
+        ...(user.privacySettings
+          ?.showEmailToWorkspaceMembers !== false
+          ? { email: user.email }
+          : {}),
+      };
+
+      if (
+        user.privacySettings
+          ?.showEmailToWorkspaceMembers === false
+      ) {
+        delete membership.user.email;
+      }
+    },
   },
   extraReducers: (builder) => {
     const pending = (state) => {
@@ -339,6 +367,7 @@ export const {
   realtimeTaskDeleted,
   clearWorkspaceError,
   clearInvitationToken,
+  syncCurrentUserProfile,
 } = slice.actions;
 
 export default slice.reducer;

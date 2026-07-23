@@ -85,11 +85,19 @@ export function createRealtimeFunctions({
                     const counts =
                         presence.get(workspaceId) ??
                         new Map();
-                    counts.set(
-                        socket.data.user.id,
-                        (counts.get(socket.data.user.id) ??
-                            0) + 1,
-                    );
+                    if (
+                        socket.data.user
+                            .privacySettings
+                            ?.showOnlineStatus !==
+                        false
+                    ) {
+                        counts.set(
+                            socket.data.user.id,
+                            (counts.get(
+                                socket.data.user.id,
+                            ) ?? 0) + 1,
+                        );
+                    }
                     presence.set(workspaceId, counts);
                     publishPresence(workspaceId);
                     acknowledge?.({ success: true });

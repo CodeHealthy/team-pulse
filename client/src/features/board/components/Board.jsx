@@ -6,6 +6,7 @@ export default function Board({
   columns,
   tasks,
   members,
+  datePreferences,
   query,
   priority,
   onNewTask,
@@ -80,6 +81,7 @@ export default function Board({
               tasks={columnTasks}
               totalTaskCount={totalTaskCount}
               members={members}
+              datePreferences={datePreferences}
               draggingTaskId={draggingTaskId}
               dragOver={
                 dragOverColumnId === column.id

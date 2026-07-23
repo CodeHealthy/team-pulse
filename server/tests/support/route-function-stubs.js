@@ -84,6 +84,11 @@ export function createRouteFunctionStubs(
         activityFunctions: {
             listWorkspaceActivity: respond,
         },
+        settingsFunctions: {
+            updateProfile: respond,
+            updatePersonalSettings: respond,
+            updatePrivacySettings: respond,
+        },
         healthFunctions: {
             checkHealth: respond,
         },

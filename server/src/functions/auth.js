@@ -65,6 +65,11 @@ function toPublicUser(user) {
         id: user.id,
         name: user.name,
         email: user.email,
+        jobTitle: user.jobTitle,
+        personalSettings:
+            user.personalSettings,
+        privacySettings:
+            user.privacySettings,
         createdAt: user.createdAt,
     };
 }

@@ -64,6 +64,38 @@ export const logoutUser = createAsyncThunk(
   },
 );
 
+function createSettingsThunk(type, update) {
+  return createAsyncThunk(
+    type,
+    async (values, { rejectWithValue }) => {
+      try {
+        return await update(values);
+      } catch (error) {
+        return rejectWithValue(
+          getErrorMessage(error),
+        );
+      }
+    },
+  );
+}
+
+export const updateProfile = createSettingsThunk(
+  "auth/updateProfile",
+  authApi.updateProfile,
+);
+
+export const updatePersonalSettings =
+  createSettingsThunk(
+    "auth/updatePersonalSettings",
+    authApi.updatePersonalSettings,
+  );
+
+export const updatePrivacySettings =
+  createSettingsThunk(
+    "auth/updatePrivacySettings",
+    authApi.updatePrivacySettings,
+  );
+
 const authSlice = createSlice({
   name: "auth",
   initialState: {
@@ -71,6 +103,8 @@ const authSlice = createSlice({
     initialized: false,
     status: "idle",
     error: null,
+    settingsStatus: "idle",
+    settingsError: null,
   },
   reducers: {
     clearAuthError(state) {
@@ -118,6 +152,35 @@ const authSlice = createSlice({
         },
       )
       .addCase(logoutUser.rejected, failRequest);
+
+    for (const thunk of [
+      updateProfile,
+      updatePersonalSettings,
+      updatePrivacySettings,
+    ]) {
+      builder
+        .addCase(thunk.pending, (state) => {
+          state.settingsStatus = "loading";
+          state.settingsError = null;
+        })
+        .addCase(
+          thunk.fulfilled,
+          (state, action) => {
+            state.user = action.payload;
+            state.settingsStatus = "idle";
+            state.settingsError = null;
+          },
+        )
+        .addCase(
+          thunk.rejected,
+          (state, action) => {
+            state.settingsStatus = "idle";
+            state.settingsError =
+              action.payload ??
+              "The settings could not be saved.";
+          },
+        );
+    }
   },
 });
 

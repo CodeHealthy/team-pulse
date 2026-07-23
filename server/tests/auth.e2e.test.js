@@ -7,6 +7,7 @@ import {
 
 import { createApp } from "../src/app.js";
 import { createAuthFunctions } from "../src/functions/auth.js";
+import { createSettingsFunctions } from "../src/functions/settings.js";
 import { createApiRouter } from "../src/routes/api-router.js";
 import { createRouteFunctionStubs } from "./support/route-function-stubs.js";
 
@@ -40,6 +41,19 @@ function createMemoryModels() {
                 name,
                 email,
                 passwordHash,
+                jobTitle: "",
+                personalSettings: {
+                    timezone: "UTC",
+                    dateFormat:
+                        "month-day-year",
+                    weekStartsOn: "monday",
+                    density: "comfortable",
+                },
+                privacySettings: {
+                    showOnlineStatus: true,
+                    showEmailToWorkspaceMembers:
+                        true,
+                },
                 createdAt: new Date(),
                 updatedAt: new Date(),
             };
@@ -47,6 +61,49 @@ function createMemoryModels() {
             users.set(id, user);
             return user;
         }
+
+        static async updateProfileById(
+            userId,
+            changes,
+        ) {
+            return updateUser(userId, changes);
+        }
+
+        static async updatePersonalSettingsById(
+            userId,
+            changes,
+        ) {
+            const user = users.get(userId);
+            return updateUser(userId, {
+                personalSettings: {
+                    ...user.personalSettings,
+                    ...changes,
+                },
+            });
+        }
+
+        static async updatePrivacySettingsById(
+            userId,
+            changes,
+        ) {
+            const user = users.get(userId);
+            return updateUser(userId, {
+                privacySettings: {
+                    ...user.privacySettings,
+                    ...changes,
+                },
+            });
+        }
+    }
+
+    function updateUser(userId, changes) {
+        const user = {
+            ...users.get(userId),
+            ...changes,
+            updatedAt: new Date(),
+        };
+        users.set(userId, user);
+        return user;
     }
 
     class RefreshSessionModel {
@@ -103,10 +160,15 @@ function createTestApplication() {
                 refreshTokenExpiresIn: "7d",
             },
         });
+    const settingsFunctions =
+        createSettingsFunctions({
+            UserRepository: UserModel,
+        });
 
     const apiRouter = createApiRouter(
         createRouteFunctionStubs({
             authFunctions,
+            settingsFunctions,
         }),
     );
 
@@ -285,6 +347,63 @@ describe("authentication API", () => {
         expect(
             loginResponse.body.data.user.email,
         ).toBe(registration.email);
+    });
+
+    it("persists profile, personal, and privacy settings", async () => {
+        const agent = request.agent(
+            createTestApplication(),
+        );
+
+        await agent
+            .post("/api/auth/register")
+            .send(registration)
+            .expect(201);
+
+        await agent
+            .patch("/api/settings/profile")
+            .send({
+                name: "Avery Updated",
+                jobTitle: "Product lead",
+            })
+            .expect(200);
+
+        await agent
+            .patch("/api/settings/personal")
+            .send({
+                timezone: "Asia/Karachi",
+                dateFormat: "day-month-year",
+                weekStartsOn: "sunday",
+                density: "compact",
+            })
+            .expect(200);
+
+        await agent
+            .patch("/api/settings/privacy")
+            .send({
+                showOnlineStatus: false,
+                showEmailToWorkspaceMembers:
+                    false,
+            })
+            .expect(200);
+
+        const response = await agent
+            .get("/api/auth/me")
+            .expect(200);
+
+        expect(response.body.data.user).toMatchObject({
+            name: "Avery Updated",
+            jobTitle: "Product lead",
+            personalSettings: {
+                timezone: "Asia/Karachi",
+                dateFormat: "day-month-year",
+                weekStartsOn: "sunday",
+                density: "compact",
+            },
+            privacySettings: {
+                showOnlineStatus: false,
+                showEmailToWorkspaceMembers: false,
+            },
+        });
     });
 
     it("validates registration input and prevents duplicate accounts", async () => {

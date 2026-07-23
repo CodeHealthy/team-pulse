@@ -16,6 +16,7 @@ export default function Sidebar({
   onCreateProject,
   onOpenWorkspace,
   onOpenProject,
+  onOpenSettings,
   onSignOut,
 }) {
   return (
@@ -112,13 +113,20 @@ export default function Sidebar({
       )}
 
       <div className="sidebar-user">
-        <span className="user-avatar">
-          {user.name.charAt(0).toUpperCase()}
-        </span>
-        <span className="sidebar-user-copy">
-          <strong>{user.name}</strong>
-          <small>{user.email}</small>
-        </span>
+        <button
+          className="sidebar-profile-button"
+          type="button"
+          aria-label="Open profile and settings"
+          onClick={onOpenSettings}
+        >
+          <span className="user-avatar">
+            {user.name.charAt(0).toUpperCase()}
+          </span>
+          <span className="sidebar-user-copy">
+            <strong>{user.name}</strong>
+            <small>{user.email}</small>
+          </span>
+        </button>
         <IconButton
           className="sidebar-sign-out"
           label="Sign out"

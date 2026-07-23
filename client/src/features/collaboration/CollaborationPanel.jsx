@@ -3,10 +3,14 @@ import { useDispatch, useSelector } from "react-redux";
 import { SOCKET_EVENTS } from "@teampulse/contracts/socket-events";
 import { socket } from "../../realtime/socket";
 import {
+  formatDateTime,
+  formatTime,
+} from "../../shared/utils/date-format";
+import {
   addChannel, loadMessages, readAllNotifications, sendMessage,
 } from "./collaboration-slice";
 
-export default function CollaborationPanel({ mode, workspaceId, onClose }) {
+export default function CollaborationPanel({ mode, workspaceId, datePreferences, onClose }) {
   const dispatch = useDispatch();
   const collaboration = useSelector((state) => state.collaboration);
   const currentUser = useSelector((state) => state.auth.user);
@@ -30,7 +34,7 @@ export default function CollaborationPanel({ mode, workspaceId, onClose }) {
           {collaboration.notifications.map((item) => (
             <article className={item.readAt ? "" : "unread"} key={item.id}>
               <strong>{item.title}</strong><p>{item.body}</p>
-              <small>{new Date(item.createdAt).toLocaleString()}</small>
+              <small>{formatDateTime(item.createdAt, datePreferences)}</small>
             </article>
           ))}
           {!collaboration.notifications.length && <p className="panel-empty">No notifications yet.</p>}
@@ -68,7 +72,7 @@ export default function CollaborationPanel({ mode, workspaceId, onClose }) {
               <article className={message.authorId === currentUser.id ? "own" : ""} key={message.id}>
                 <strong>{message.author?.name ?? "Team member"}</strong>
                 <p>{message.content}</p>
-                <small>{new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</small>
+                <small>{formatTime(message.createdAt, datePreferences)}</small>
               </article>
             ))}
           </div>

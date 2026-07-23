@@ -12,6 +12,7 @@ export default function BoardColumn({
   tasks,
   totalTaskCount,
   members,
+  datePreferences,
   draggingTaskId,
   dragOver,
   filtered,
@@ -68,6 +69,7 @@ export default function BoardColumn({
             key={task.id}
             task={task}
             members={members}
+            datePreferences={datePreferences}
             dragging={draggingTaskId === task.id}
             onDragStart={(event) =>
               onDragStart(event, task.id)

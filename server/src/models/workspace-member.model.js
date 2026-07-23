@@ -55,11 +55,22 @@ function toWorkspaceMember(membership) {
     const populatedUser =
         membership.userId &&
         typeof membership.userId === "object" &&
-        membership.userId.email
+        membership.userId.name
             ? {
                   id: membership.userId._id.toString(),
                   name: membership.userId.name,
-                  email: membership.userId.email,
+                  ...((membership.userId
+                      .privacySettings
+                      ?.showEmailToWorkspaceMembers ??
+                  true)
+                      ? {
+                            email: membership
+                                .userId.email,
+                        }
+                      : {}),
+                  jobTitle:
+                      membership.userId
+                          .jobTitle ?? "",
               }
             : null;
 
@@ -121,7 +132,7 @@ export const workspaceMemberRepository =
                 })
                     .populate(
                         "userId",
-                        "name email",
+                        "name email jobTitle privacySettings.showEmailToWorkspaceMembers",
                     )
                     .sort({ createdAt: 1 })
                     .lean()

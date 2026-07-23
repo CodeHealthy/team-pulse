@@ -124,6 +124,42 @@ export const authApi = Object.freeze({
     return response.data.user;
   },
 
+  async updateProfile(profile) {
+    const response = await apiRequest(
+      "/settings/profile",
+      {
+        method: "PATCH",
+        body: JSON.stringify(profile),
+      },
+    );
+
+    return response.data.user;
+  },
+
+  async updatePersonalSettings(settings) {
+    const response = await apiRequest(
+      "/settings/personal",
+      {
+        method: "PATCH",
+        body: JSON.stringify(settings),
+      },
+    );
+
+    return response.data.user;
+  },
+
+  async updatePrivacySettings(settings) {
+    const response = await apiRequest(
+      "/settings/privacy",
+      {
+        method: "PATCH",
+        body: JSON.stringify(settings),
+      },
+    );
+
+    return response.data.user;
+  },
+
   async logout() {
     await apiRequest(
       "/auth/logout",
