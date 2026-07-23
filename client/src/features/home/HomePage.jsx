@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { SOCKET_EVENTS } from "@teampulse/contracts/socket-events";
 import {
   useDispatch,
@@ -38,7 +43,9 @@ import {
   realtimeTaskUpdated,
 } from "../workspaces/workspace-slice";
 import { socket } from "../../realtime/socket";
-import TeamPulseLogo from "../../shared/components/brand/TeamPulseLogo";
+import Board from "../board/components/Board";
+import ProjectHeader from "../board/components/ProjectHeader";
+import Sidebar from "./components/Sidebar";
 
 const EMPTY_TASK = {
   title: "",
@@ -66,6 +73,9 @@ export default function HomePage() {
   const [editingTaskId, setEditingTaskId] =
     useState(null);
   const [sidePanel, setSidePanel] = useState(null);
+  const [boardQuery, setBoardQuery] = useState("");
+  const [boardPriority, setBoardPriority] =
+    useState("all");
   const collaboration = useSelector(
     (state) => state.collaboration,
   );
@@ -136,7 +146,7 @@ export default function HomePage() {
     };
   }, [dispatch, workspace.selectedWorkspaceId]);
 
-  function closeModal() {
+  const closeModal = useCallback(() => {
     if (modal === "invite") {
       dispatch(clearInvitationToken());
     }
@@ -144,7 +154,7 @@ export default function HomePage() {
     setEditingTaskId(null);
     setTaskForm(EMPTY_TASK);
     dispatch(clearWorkspaceError());
-  }
+  }, [dispatch, modal]);
 
   function openNewTask(columnId) {
     setActiveColumnId(columnId);
@@ -230,102 +240,28 @@ export default function HomePage() {
 
   return (
     <div className="product-shell">
-      <aside className="product-sidebar">
-        <TeamPulseLogo variant="light" size={34} />
-
-        <nav className="workspace-nav">
-          <div className="nav-heading">
-            <span>Workspaces</span>
-            <button
-              type="button"
-              onClick={() =>
-                setModal("workspace")
-              }
-              aria-label="Create workspace"
-            >
-              +
-            </button>
-          </div>
-          {workspace.workspaces.map((item) => (
-            <button
-              className={
-                item.id ===
-                workspace.selectedWorkspaceId
-                  ? "nav-item active"
-                  : "nav-item"
-              }
-              key={item.id}
-              type="button"
-              onClick={() =>
-                dispatch(openWorkspace(item.id))
-              }
-            >
-              <span className="workspace-avatar">
-                {item.name.charAt(0)}
-              </span>
-              {item.name}
-            </button>
-          ))}
-        </nav>
-
-        {selectedWorkspace && (
-          <nav className="project-nav">
-            <div className="nav-heading">
-              <span>Projects</span>
-              <button
-                type="button"
-                onClick={() =>
-                  setModal("project")
-                }
-                aria-label="Create project"
-              >
-                +
-              </button>
-            </div>
-            {workspace.projects.map((project) => (
-              <button
-                className={
-                  project.id ===
-                  workspace.selectedProjectId
-                    ? "nav-item active"
-                    : "nav-item"
-                }
-                key={project.id}
-                type="button"
-                onClick={() =>
-                  dispatch(
-                    openProject(project.id),
-                  )
-                }
-              >
-                <span
-                  className="project-color"
-                  style={{
-                    background: project.color,
-                  }}
-                />
-                {project.name}
-              </button>
-            ))}
-          </nav>
-        )}
-
-        <div className="sidebar-user">
-          <span className="user-avatar">
-            {user.name.charAt(0).toUpperCase()}
-          </span>
-          <span>
-            <strong>{user.name}</strong>
-            <small>{user.email}</small>
-          </span>
-          <button
-            type="button"
-            onClick={() => dispatch(logoutUser())}
-          >
-            Sign out
-          </button>
-        </div>
-      </aside>
+      <Sidebar
+        user={user}
+        workspaces={workspace.workspaces}
+        projects={workspace.projects}
+        selectedWorkspaceId={
+          workspace.selectedWorkspaceId
+        }
+        selectedProjectId={
+          workspace.selectedProjectId
+        }
+        onCreateWorkspace={() =>
+          setModal("workspace")
+        }
+        onCreateProject={() => setModal("project")}
+        onOpenWorkspace={(workspaceId) =>
+          dispatch(openWorkspace(workspaceId))
+        }
+        onOpenProject={(projectId) =>
+          dispatch(openProject(projectId))
+        }
+        onSignOut={() => dispatch(logoutUser())}
+      />
 
       <main className="product-main">
         {!selectedWorkspace ? (
@@ -337,49 +273,35 @@ export default function HomePage() {
           />
         ) : (
           <>
-            <header className="workspace-header">
-              <div>
-                <p className="eyebrow">
-                  {selectedWorkspace.name}
-                </p>
-                <h1>
-                  {selectedProject?.name ??
-                    "Workspace overview"}
-                </h1>
-              </div>
-              <div className="header-actions">
-                <span className="member-count">
-                  {collaboration.onlineUserIds.length} online · {workspace.members.length}{" "}
-                  {workspace.members.length === 1
-                    ? "member"
-                    : "members"}
-                </span>
-                {["owner", "admin"].includes(
-                  selectedWorkspace.role,
-                ) && (
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    onClick={() =>
-                      setModal("invite")
-                    }
-                  >
-                    Invite member
-                  </button>
-                )}
-                <button className="secondary-button" type="button" onClick={() => setSidePanel("chat")}>
-                  Channels
-                  {collaboration.channels.reduce((sum, channel) => sum + channel.unreadCount, 0) > 0 &&
-                    ` (${collaboration.channels.reduce((sum, channel) => sum + channel.unreadCount, 0)})`}
-                </button>
-                <button className="secondary-button" type="button" onClick={() => setSidePanel("notifications")}>
-                  Inbox
-                  {collaboration.notifications.filter((item) => !item.readAt).length > 0 &&
-                    ` (${collaboration.notifications.filter((item) => !item.readAt).length})`}
-                </button>
-                <button className="secondary-button" type="button" onClick={() => setSidePanel("insights")}>Tools</button>
-              </div>
-            </header>
+            <ProjectHeader
+              workspace={selectedWorkspace}
+              project={selectedProject}
+              members={workspace.members}
+              onlineUserIds={
+                collaboration.onlineUserIds
+              }
+              unreadMessages={collaboration.channels.reduce(
+                (sum, channel) =>
+                  sum + channel.unreadCount,
+                0,
+              )}
+              unreadNotifications={collaboration.notifications.filter(
+                (item) => !item.readAt,
+              ).length}
+              query={boardQuery}
+              priority={boardPriority}
+              onQueryChange={setBoardQuery}
+              onPriorityChange={setBoardPriority}
+              onInvite={() => setModal("invite")}
+              onOpenChat={() => setSidePanel("chat")}
+              onOpenNotifications={() =>
+                setSidePanel("notifications")
+              }
+              onOpenTools={() =>
+                setSidePanel("insights")
+              }
+              onNewColumn={() => setModal("column")}
+            />
 
             {workspace.error && (
               <p className="form-error workspace-error">
@@ -396,13 +318,14 @@ export default function HomePage() {
               />
             ) : (
               <Board
-                workspace={workspace}
+                columns={workspace.columns}
+                tasks={workspace.tasks}
+                members={workspace.members}
+                query={boardQuery}
+                priority={boardPriority}
                 onNewTask={openNewTask}
                 onOpenTask={openTask}
                 onDrop={handleDrop}
-                onNewColumn={() =>
-                  setModal("column")
-                }
               />
             )}
           </>
@@ -581,122 +504,65 @@ function EmptyProject({ projects, onCreate }) {
   );
 }
 
-function Board({
-  workspace,
-  onNewTask,
-  onOpenTask,
-  onDrop,
-  onNewColumn,
-}) {
-  return (
-    <section className="board-area">
-      <div className="board-toolbar">
-        <span>Board</span>
-        <button
-          className="secondary-button"
-          type="button"
-          onClick={onNewColumn}
-        >
-          Add column
-        </button>
-      </div>
-      <div className="kanban-board">
-        {workspace.columns.map((column) => {
-          const tasks = workspace.tasks.filter(
-            (task) =>
-              task.columnId === column.id,
-          );
-
-          return (
-            <article
-              className="kanban-column"
-              key={column.id}
-              onDragOver={(event) =>
-                event.preventDefault()
-              }
-              onDrop={(event) =>
-                onDrop(event, column.id)
-              }
-            >
-              <header>
-                <h2>{column.name}</h2>
-                <span>{tasks.length}</span>
-              </header>
-              <div className="task-list">
-                {tasks.map((task) => (
-                  <button
-                    className="task-card"
-                    key={task.id}
-                    type="button"
-                    draggable
-                    onDragStart={(event) =>
-                      event.dataTransfer.setData(
-                        "text/task-id",
-                        task.id,
-                      )
-                    }
-                    onClick={() =>
-                      onOpenTask(task)
-                    }
-                  >
-                    <span
-                      className={`priority priority-${task.priority}`}
-                    >
-                      {task.priority}
-                    </span>
-                    <strong>{task.title}</strong>
-                    {task.labels.length > 0 && (
-                      <span className="task-labels">
-                        {task.labels.map((label) => (
-                          <small key={label}>
-                            {label}
-                          </small>
-                        ))}
-                      </span>
-                    )}
-                    <span className="task-meta">
-                      {task.dueDate
-                        ? new Date(
-                            task.dueDate,
-                          ).toLocaleDateString()
-                        : "No due date"}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <button
-                className="add-task-button"
-                type="button"
-                onClick={() =>
-                  onNewTask(column.id)
-                }
-              >
-                + Add task
-              </button>
-            </article>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
 function Modal({
   title,
   onClose,
   error,
   children,
 }) {
+  const dialogRef = useRef(null);
+
   useEffect(() => {
+    const previouslyFocused = document.activeElement;
+    const dialog = dialogRef.current;
+    const focusableSelector =
+      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
+    const firstFocusable =
+      dialog?.querySelector(focusableSelector);
+
+    (firstFocusable ?? dialog)?.focus();
+
     function handleKeyDown(event) {
       if (event.key === "Escape") onClose();
+
+      if (
+        event.key !== "Tab" ||
+        !dialogRef.current
+      ) {
+        return;
+      }
+
+      const focusable = [
+        ...dialogRef.current.querySelectorAll(
+          focusableSelector,
+        ),
+      ];
+      const first = focusable[0];
+      const last = focusable.at(-1);
+
+      if (
+        event.shiftKey &&
+        document.activeElement === first
+      ) {
+        event.preventDefault();
+        last?.focus();
+      } else if (
+        !event.shiftKey &&
+        document.activeElement === last
+      ) {
+        event.preventDefault();
+        first?.focus();
+      }
     }
+
     window.addEventListener("keydown", handleKeyDown);
-    return () =>
+    return () => {
       window.removeEventListener(
         "keydown",
         handleKeyDown,
       );
+      previouslyFocused?.focus();
+    };
   }, [onClose]);
 
   return (
@@ -710,10 +576,12 @@ function Modal({
       }}
     >
       <section
+        ref={dialogRef}
         className="modal-card"
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        tabIndex={-1}
       >
         <header>
           <h2>{title}</h2>
