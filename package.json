@@ -1,0 +1,29 @@
+{
+  "name": "team-pulse",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "client": "npm run dev --prefix client",
+    "server": "npm run dev --prefix server",
+    "build": "npm run build --prefix client"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CodeHealthy/team-pulse.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/CodeHealthy/team-pulse/issues"
+  },
+  "homepage": "https://github.com/CodeHealthy/team-pulse#readme",
+  "private": true,
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
+}
