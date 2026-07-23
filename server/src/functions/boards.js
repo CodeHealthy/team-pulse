@@ -1,0 +1,246 @@
+import { z } from "zod";
+
+import { HTTP_STATUS } from "../core/http/http-status.js";
+import {
+    notFound,
+    requireWorkspaceAccess,
+} from "./access.js";
+
+const id = z.string().regex(/^[a-f\d]{24}$/i);
+
+export const boardByProjectSchema = z.object({
+    body: z.object({}),
+    params: z.object({ projectId: id }),
+    query: z.object({}),
+});
+
+export const createColumnSchema = z.object({
+    body: z.object({
+        name: z.string().trim().min(1).max(60),
+    }),
+    params: z.object({ boardId: id }),
+    query: z.object({}),
+});
+
+export const updateColumnSchema = z.object({
+    body: z
+        .object({
+            name: z
+                .string()
+                .trim()
+                .min(1)
+                .max(60)
+                .optional(),
+            position: z
+                .number()
+                .int()
+                .min(0)
+                .optional(),
+        })
+        .refine(
+            (body) =>
+                Object.keys(body).length > 0,
+        ),
+    params: z.object({ columnId: id }),
+    query: z.object({}),
+});
+
+export const columnIdSchema = z.object({
+    body: z.object({}),
+    params: z.object({ columnId: id }),
+    query: z.object({}),
+});
+
+export function createBoardFunctions({
+    ProjectModel,
+    BoardModel,
+    BoardColumnModel,
+    TaskModel,
+    WorkspaceMemberModel,
+}) {
+    async function accessWorkspace(
+        workspaceId,
+        userId,
+    ) {
+        return requireWorkspaceAccess({
+            WorkspaceMemberModel,
+            workspaceId,
+            userId,
+        });
+    }
+
+    async function get(request, response, next) {
+        try {
+            const project =
+                await ProjectModel.findById(
+                    request.validated.params
+                        .projectId,
+                );
+
+            if (!project) {
+                throw notFound("Project");
+            }
+
+            await accessWorkspace(
+                project.workspaceId,
+                request.auth.user.id,
+            );
+
+            const board =
+                await BoardModel.findByProject(
+                    project.id,
+                );
+
+            if (!board) {
+                throw notFound("Board");
+            }
+
+            const [columns, tasks] =
+                await Promise.all([
+                    BoardColumnModel.list(
+                        board.id,
+                    ),
+                    TaskModel.list(board.id),
+                ]);
+
+            return response.json({
+                success: true,
+                data: {
+                    project,
+                    board,
+                    columns,
+                    tasks,
+                },
+            });
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+    async function createColumn(
+        request,
+        response,
+        next,
+    ) {
+        try {
+            const board =
+                await BoardModel.findById(
+                    request.validated.params
+                        .boardId,
+                );
+
+            if (!board) {
+                throw notFound("Board");
+            }
+
+            await accessWorkspace(
+                board.workspaceId,
+                request.auth.user.id,
+            );
+
+            const column =
+                await BoardColumnModel.create({
+                    workspaceId:
+                        board.workspaceId,
+                    projectId: board.projectId,
+                    boardId: board.id,
+                    name: request.validated.body
+                        .name,
+                    position:
+                        await BoardColumnModel.nextPosition(
+                            board.id,
+                        ),
+                });
+
+            return response
+                .status(HTTP_STATUS.CREATED)
+                .json({
+                    success: true,
+                    data: { column },
+                });
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+    async function updateColumn(
+        request,
+        response,
+        next,
+    ) {
+        try {
+            const { columnId } =
+                request.validated.params;
+            const existing =
+                await BoardColumnModel.findById(
+                    columnId,
+                );
+
+            if (!existing) {
+                throw notFound("Board column");
+            }
+
+            await accessWorkspace(
+                existing.workspaceId,
+                request.auth.user.id,
+            );
+
+            return response.json({
+                success: true,
+                data: {
+                    column:
+                        await BoardColumnModel.update(
+                            columnId,
+                            request.validated.body,
+                        ),
+                },
+            });
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+    async function removeColumn(
+        request,
+        response,
+        next,
+    ) {
+        try {
+            const { columnId } =
+                request.validated.params;
+            const column =
+                await BoardColumnModel.findById(
+                    columnId,
+                );
+
+            if (!column) {
+                throw notFound("Board column");
+            }
+
+            await accessWorkspace(
+                column.workspaceId,
+                request.auth.user.id,
+            );
+
+            await TaskModel.removeFromColumn(
+                columnId,
+            );
+            await BoardColumnModel.remove(
+                columnId,
+            );
+
+            return response
+                .status(HTTP_STATUS.NO_CONTENT)
+                .send();
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+    return Object.freeze({
+        get,
+        createColumn,
+        updateColumn,
+        removeColumn,
+    });
+}

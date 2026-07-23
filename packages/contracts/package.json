@@ -1,0 +1,11 @@
+{
+  "name": "@teampulse/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./app-metadata": "./src/app-metadata.js",
+    "./domain": "./src/domain.js",
+    "./socket-events": "./src/socket-events.js"
+  }
+}

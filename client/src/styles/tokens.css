@@ -1,0 +1,13 @@
+:root {
+  --tp-color-navy: #0B1220;
+  --tp-color-blue: #4F7CFF;
+  --tp-color-cyan: #21D4FD;
+  --tp-color-mint: #29D39A;
+  --tp-color-cloud: #F6F8FC;
+  --tp-color-slate: #64748B;
+  --tp-gradient-brand: linear-gradient(135deg, #4F7CFF 0%, #21D4FD 100%);
+  --tp-radius-sm: 8px;
+  --tp-radius-md: 14px;
+  --tp-radius-lg: 20px;
+  --tp-shadow-brand: 0 12px 32px rgba(79, 124, 255, 0.22);
+}

@@ -1,51 +1,89 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import {
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router";
+import {
+  useDispatch,
+  useSelector,
+} from "react-redux";
 
-import { socket } from "./lib/socket";
+import AuthPage from "./features/auth/AuthPage";
+import { initializeAuth } from "./features/auth/auth-slice";
+import HomePage from "./features/home/HomePage";
+import InvitationPage from "./features/workspaces/InvitationPage";
+import TeamPulseLogo from "./shared/components/brand/TeamPulseLogo";
 
-function App() {
-  const [socketStatus, setSocketStatus] = useState("Disconnected");
-  const [socketId, setSocketId] = useState(null);
+function SessionGate() {
+  const dispatch = useDispatch();
+  const initialized = useSelector(
+    (state) => state.auth.initialized,
+  );
 
   useEffect(() => {
-    function handleConnect() {
-      setSocketStatus("Connected");
+    if (!initialized) {
+      dispatch(initializeAuth());
     }
+  }, [dispatch, initialized]);
 
-    function handleDisconnect() {
-      setSocketStatus("Disconnected");
-      setSocketId(null);
-    }
+  if (!initialized) {
+    return (
+      <main className="session-loader">
+        <TeamPulseLogo size={42} />
+        <p>Preparing your workspace...</p>
+      </main>
+    );
+  }
 
-    function handleReady(data) {
-      setSocketId(data.socketId);
-    }
+  return <Outlet />;
+}
 
-    socket.on("connect", handleConnect);
-    socket.on("disconnect", handleDisconnect);
-    socket.on("connection:ready", handleReady);
+function ProtectedRoute() {
+  const location = useLocation();
+  const user = useSelector(
+    (state) => state.auth.user,
+  );
 
-    socket.connect();
-
-    return () => {
-      socket.off("connect", handleConnect);
-      socket.off("disconnect", handleDisconnect);
-      socket.off("connection:ready", handleReady);
-      socket.disconnect();
-    };
-  }, []);
-
-  return (
-    <main>
-      <h1>TeamPulse</h1>
-      <p>Real-time team collaboration workspace</p>
-
-      <p>
-        Socket status: <strong>{socketStatus}</strong>
-      </p>
-
-      {socketId && <p>Socket ID: {socketId}</p>}
-    </main>
+  return user ? (
+    <Outlet />
+  ) : (
+    <Navigate
+      to="/login"
+      replace
+      state={{ from: location.pathname }}
+    />
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <Routes>
+      <Route element={<SessionGate />}>
+        <Route
+          path="/login"
+          element={<AuthPage mode="login" />}
+        />
+        <Route
+          path="/register"
+          element={<AuthPage mode="register" />}
+        />
+
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<HomePage />} />
+          <Route
+            path="/invite/:token"
+            element={<InvitationPage />}
+          />
+        </Route>
+
+        <Route
+          path="*"
+          element={<Navigate to="/" replace />}
+        />
+      </Route>
+    </Routes>
+  );
+}
