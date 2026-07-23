@@ -13,16 +13,21 @@ const schema = new mongoose.Schema(
     },
     { timestamps: true, versionKey: false },
 );
-const Document = mongoose.models.Notification ?? mongoose.model("Notification", schema);
+const NotificationModel = mongoose.models.Notification ?? mongoose.model("Notification", schema);
 const record = (d) => d && ({
     id: d._id.toString(), userId: d.userId.toString(), workspaceId: d.workspaceId.toString(),
     type: d.type, title: d.title, body: d.body, entityType: d.entityType,
     entityId: d.entityId?.toString() ?? null, readAt: d.readAt, createdAt: d.createdAt,
 });
 
-export class Notification {
-    static async create(values) { return record(await Document.create(values)); }
-    static async list(userId) { return (await Document.find({ userId }).sort({ createdAt: -1 }).limit(100).exec()).map(record); }
-    static async read(id, userId) { return record(await Document.findOneAndUpdate({ _id: id, userId }, { readAt: new Date() }, { new: true }).exec()); }
-    static async readAll(userId) { await Document.updateMany({ userId, readAt: null }, { readAt: new Date() }).exec(); }
-}
+export const notificationRepository = Object.freeze({
+    async create(values) { return record(await NotificationModel.create(values)); },
+    async listByUserId(userId) {
+        const notifications = await NotificationModel.find({ userId }).sort({ createdAt: -1 }).limit(100).lean().exec();
+        return notifications.map(record);
+    },
+    async markReadById(id, userId) { return record(await NotificationModel.findOneAndUpdate({ _id: id, userId }, { $set: { readAt: new Date() } }, { new: true }).lean().exec()); },
+    async markAllReadByUserId(userId) { await NotificationModel.updateMany({ userId, readAt: null }, { $set: { readAt: new Date() } }).exec(); },
+});
+
+export { NotificationModel };

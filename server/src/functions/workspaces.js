@@ -61,17 +61,17 @@ function slugify(name) {
 }
 
 export function createWorkspaceFunctions({
-    WorkspaceModel,
-    WorkspaceMemberModel,
+    WorkspaceRepository,
+    WorkspaceMemberRepository,
 }) {
     async function list(request, response, next) {
         try {
             const memberships =
-                await WorkspaceMemberModel.listForUser(
+                await WorkspaceMemberRepository.listByUserId(
                     request.auth.user.id,
                 );
             const workspaces =
-                await WorkspaceModel.findMany(
+                await WorkspaceRepository.findByIds(
                     memberships.map(
                         (membership) =>
                             membership.workspaceId,
@@ -105,7 +105,7 @@ export function createWorkspaceFunctions({
     async function create(request, response, next) {
         try {
             const workspace =
-                await WorkspaceModel.create({
+                await WorkspaceRepository.create({
                     name: request.validated.body.name,
                     slug: slugify(
                         request.validated.body.name,
@@ -115,13 +115,13 @@ export function createWorkspaceFunctions({
                 });
 
             try {
-                await WorkspaceMemberModel.create({
+                await WorkspaceMemberRepository.create({
                     workspaceId: workspace.id,
                     userId: request.auth.user.id,
                     role: WORKSPACE_ROLES.OWNER,
                 });
             } catch (error) {
-                await WorkspaceModel.remove(
+                await WorkspaceRepository.deleteById(
                     workspace.id,
                 );
                 throw error;
@@ -149,12 +149,12 @@ export function createWorkspaceFunctions({
                 request.validated.params;
             const membership =
                 await requireWorkspaceAccess({
-                    WorkspaceMemberModel,
+                    WorkspaceMemberRepository,
                     workspaceId,
                     userId: request.auth.user.id,
                 });
             const workspace =
-                await WorkspaceModel.findById(
+                await WorkspaceRepository.findById(
                     workspaceId,
                 );
 
@@ -182,7 +182,7 @@ export function createWorkspaceFunctions({
                 request.validated.params;
 
             await requireWorkspaceAccess({
-                WorkspaceMemberModel,
+                WorkspaceMemberRepository,
                 workspaceId,
                 userId: request.auth.user.id,
                 roles: [
@@ -192,7 +192,7 @@ export function createWorkspaceFunctions({
             });
 
             const workspace =
-                await WorkspaceModel.update(
+                await WorkspaceRepository.updateById(
                     workspaceId,
                     request.validated.body,
                 );
@@ -220,7 +220,7 @@ export function createWorkspaceFunctions({
                 request.validated.params;
 
             await requireWorkspaceAccess({
-                WorkspaceMemberModel,
+                WorkspaceMemberRepository,
                 workspaceId,
                 userId: request.auth.user.id,
             });
@@ -229,7 +229,7 @@ export function createWorkspaceFunctions({
                 success: true,
                 data: {
                     members:
-                        await WorkspaceMemberModel.listMembers(
+                        await WorkspaceMemberRepository.listByWorkspaceId(
                             workspaceId,
                         ),
                 },
@@ -249,7 +249,7 @@ export function createWorkspaceFunctions({
                 request.validated.params;
 
             await requireWorkspaceAccess({
-                WorkspaceMemberModel,
+                WorkspaceMemberRepository,
                 workspaceId,
                 userId: request.auth.user.id,
                 roles: [WORKSPACE_ROLES.OWNER],
@@ -266,7 +266,7 @@ export function createWorkspaceFunctions({
             }
 
             const membership =
-                await WorkspaceMemberModel.updateRole(
+                await WorkspaceMemberRepository.updateRole(
                     workspaceId,
                     userId,
                     request.validated.body.role,

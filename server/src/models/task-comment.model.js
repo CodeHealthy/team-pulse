@@ -9,7 +9,7 @@ const schema = new mongoose.Schema(
     },
     { timestamps: true, versionKey: false },
 );
-const Document = mongoose.models.TaskComment ?? mongoose.model("TaskComment", schema);
+const TaskCommentModel = mongoose.models.TaskComment ?? mongoose.model("TaskComment", schema);
 const record = (d) => d && ({
     id: d._id.toString(), workspaceId: d.workspaceId.toString(),
     taskId: d.taskId.toString(),
@@ -18,13 +18,16 @@ const record = (d) => d && ({
     content: d.content, createdAt: d.createdAt,
 });
 
-export class TaskComment {
-    static async create(values) {
-        const comment = await Document.create(values);
+export const taskCommentRepository = Object.freeze({
+    async create(values) {
+        const comment = await TaskCommentModel.create(values);
         await comment.populate("authorId", "name");
         return record(comment);
-    }
-    static async list(taskId) {
-        return (await Document.find({ taskId }).populate("authorId", "name").sort({ createdAt: 1 }).exec()).map(record);
-    }
-}
+    },
+    async listByTaskId(taskId) {
+        const comments = await TaskCommentModel.find({ taskId }).populate("authorId", "name").sort({ createdAt: 1 }).lean().exec();
+        return comments.map(record);
+    },
+});
+
+export { TaskCommentModel };

@@ -9,6 +9,7 @@ import {
 import { createApp } from "../src/app.js";
 import { createHealthFunctions } from "../src/functions/health.js";
 import { createApiRouter } from "../src/routes/api-router.js";
+import { createRouteFunctionStubs } from "./support/route-function-stubs.js";
 
 function createTestApplication() {
     const databaseStub = {
@@ -22,17 +23,11 @@ function createTestApplication() {
             database: databaseStub,
         });
 
-    const apiRouter = createApiRouter({
-        authFunctions: {
-            register: notImplemented,
-            login: notImplemented,
-            refresh: notImplemented,
-            requireAuth: notImplemented,
-            currentUser: notImplemented,
-            logout: notImplemented,
-        },
-        healthFunctions,
-    });
+    const apiRouter = createApiRouter(
+        createRouteFunctionStubs({
+            healthFunctions,
+        }),
+    );
 
     return createApp({
         config: {
@@ -46,9 +41,6 @@ function createTestApplication() {
     });
 }
 
-function notImplemented(_request, response) {
-    return response.status(501).send();
-}
 
 describe("GET /api/health", () => {
     it("returns the application health status", async () => {

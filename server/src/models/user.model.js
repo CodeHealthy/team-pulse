@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema(
     },
 );
 
-const UserDocument =
+const UserModel =
     mongoose.models.User ??
     mongoose.model("User", userSchema);
 
@@ -52,39 +52,41 @@ function toRecord(document) {
  * Keeps all User database operations behind one model class.
  * Endpoint functions do not need to know Mongoose query details.
  */
-export class User {
-    static async findByEmail(
+export const userRepository = Object.freeze({
+    async findByEmail(
         email,
         { includePassword = false } = {},
     ) {
-        let query = UserDocument.findOne({ email });
+        let query = UserModel.findOne({ email });
 
         if (includePassword) {
             query = query.select("+passwordHash");
         }
 
         return toRecord(await query.exec());
-    }
+    },
 
-    static async findById(userId) {
+    async findById(userId) {
         return toRecord(
-            await UserDocument.findById(
+            await UserModel.findById(
                 userId,
             ).exec(),
         );
-    }
+    },
 
-    static async create({
+    async create({
         name,
         email,
         passwordHash,
     }) {
         return toRecord(
-            await UserDocument.create({
+            await UserModel.create({
                 name,
                 email,
                 passwordHash,
             }),
         );
-    }
-}
+    },
+});
+
+export { UserModel };

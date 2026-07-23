@@ -1,242 +1,65 @@
 import { Router } from "express";
 
-import { validateRequest } from "../core/middleware/validate-request.js";
 import {
-    loginSchema,
-    registerSchema,
-} from "../functions/auth.js";
-import {
-    boardByProjectSchema,
-    columnIdSchema,
-    createColumnSchema,
-    updateColumnSchema,
-} from "../functions/boards.js";
-import {
-    channelSchema,
-    createChannelSchema,
-    createCommentSchema,
-    createMessageSchema,
-    notificationIdSchema,
-    taskCommentsSchema,
-    workspaceChannelsSchema,
-} from "../functions/collaboration.js";
-import {
-    acceptInvitationSchema,
-    createInvitationSchema,
-    invitationListSchema,
-} from "../functions/invitations.js";
-import {
-    createProjectSchema,
-    projectIdSchema,
-    projectListSchema,
-    updateProjectSchema,
-} from "../functions/projects.js";
-import {
-    calendarSchema,
-    conversationSchema,
-    createConversationSchema,
-    directMessageSchema,
-    taskAttachmentSchema,
-    workspaceOnlySchema,
-    workspaceQuerySchema,
-} from "../functions/phase-three.js";
-import {
-    createTaskSchema,
-    taskIdSchema,
-    updateTaskSchema,
-} from "../functions/tasks.js";
-import {
-    createWorkspaceSchema,
-    updateMemberRoleSchema,
-    updateWorkspaceSchema,
-    workspaceIdSchema,
-} from "../functions/workspaces.js";
+    createBoardRouter,
+    createColumnRouter,
+} from "./boards.routes.js";
+import { createAuthRouter } from "./auth.routes.js";
+import { createChannelRouter } from "./channels.routes.js";
+import { createConversationRouter } from "./conversations.routes.js";
+import { createHealthRouter } from "./health.routes.js";
+import { createInvitationRouter } from "./invitations.routes.js";
+import { createNotificationRouter } from "./notifications.routes.js";
+import { createProjectRouter } from "./projects.routes.js";
+import { createTaskRouter } from "./tasks.routes.js";
+import { createWorkspaceRouter } from "./workspaces.routes.js";
 
-export function createApiRouter({
-    authFunctions,
-    boardFunctions,
-    collaborationFunctions,
-    healthFunctions,
-    invitationFunctions,
-    phaseThreeFunctions,
-    projectFunctions,
-    taskFunctions,
-    workspaceFunctions,
-}) {
+export function createApiRouter(functions) {
     const router = Router();
 
-    router.post(
-        "/auth/register",
-        validateRequest(registerSchema),
-        authFunctions.register,
+    router.use(
+        "/auth",
+        createAuthRouter(functions),
     );
-    router.post(
-        "/auth/login",
-        validateRequest(loginSchema),
-        authFunctions.login,
-    );
-    router.post(
-        "/auth/refresh",
-        authFunctions.refresh,
-    );
-    router.get(
-        "/auth/me",
-        authFunctions.requireAuth,
-        authFunctions.currentUser,
-    );
-    router.post(
-        "/auth/logout",
-        authFunctions.logout,
-    );
-
-    router.get(
+    router.use(
         "/workspaces",
-        authFunctions.requireAuth,
-        workspaceFunctions.list,
+        createWorkspaceRouter(functions),
     );
-    router.post(
-        "/workspaces",
-        authFunctions.requireAuth,
-        validateRequest(createWorkspaceSchema),
-        workspaceFunctions.create,
+    router.use(
+        "/invitations",
+        createInvitationRouter(functions),
     );
-    router.get(
-        "/workspaces/:workspaceId",
-        authFunctions.requireAuth,
-        validateRequest(workspaceIdSchema),
-        workspaceFunctions.get,
+    router.use(
+        "/projects",
+        createProjectRouter(functions),
     );
-    router.patch(
-        "/workspaces/:workspaceId",
-        authFunctions.requireAuth,
-        validateRequest(updateWorkspaceSchema),
-        workspaceFunctions.update,
+    router.use(
+        "/boards",
+        createBoardRouter(functions),
     );
-    router.get(
-        "/workspaces/:workspaceId/members",
-        authFunctions.requireAuth,
-        validateRequest(workspaceIdSchema),
-        workspaceFunctions.listMembers,
+    router.use(
+        "/columns",
+        createColumnRouter(functions),
     );
-    router.patch(
-        "/workspaces/:workspaceId/members/:userId",
-        authFunctions.requireAuth,
-        validateRequest(updateMemberRoleSchema),
-        workspaceFunctions.updateMemberRole,
+    router.use(
+        "/tasks",
+        createTaskRouter(functions),
     );
-
-    router.get(
-        "/workspaces/:workspaceId/invitations",
-        authFunctions.requireAuth,
-        validateRequest(invitationListSchema),
-        invitationFunctions.list,
+    router.use(
+        "/channels",
+        createChannelRouter(functions),
     );
-    router.post(
-        "/workspaces/:workspaceId/invitations",
-        authFunctions.requireAuth,
-        validateRequest(createInvitationSchema),
-        invitationFunctions.create,
+    router.use(
+        "/conversations",
+        createConversationRouter(functions),
     );
-    router.post(
-        "/invitations/:token/accept",
-        authFunctions.requireAuth,
-        validateRequest(acceptInvitationSchema),
-        invitationFunctions.accept,
+    router.use(
+        "/notifications",
+        createNotificationRouter(functions),
     );
-
-    router.get(
-        "/workspaces/:workspaceId/projects",
-        authFunctions.requireAuth,
-        validateRequest(projectListSchema),
-        projectFunctions.list,
-    );
-    router.post(
-        "/workspaces/:workspaceId/projects",
-        authFunctions.requireAuth,
-        validateRequest(createProjectSchema),
-        projectFunctions.create,
-    );
-    router.get(
-        "/projects/:projectId",
-        authFunctions.requireAuth,
-        validateRequest(projectIdSchema),
-        projectFunctions.get,
-    );
-    router.patch(
-        "/projects/:projectId",
-        authFunctions.requireAuth,
-        validateRequest(updateProjectSchema),
-        projectFunctions.update,
-    );
-
-    router.get(
-        "/projects/:projectId/board",
-        authFunctions.requireAuth,
-        validateRequest(boardByProjectSchema),
-        boardFunctions.get,
-    );
-    router.post(
-        "/boards/:boardId/columns",
-        authFunctions.requireAuth,
-        validateRequest(createColumnSchema),
-        boardFunctions.createColumn,
-    );
-    router.patch(
-        "/columns/:columnId",
-        authFunctions.requireAuth,
-        validateRequest(updateColumnSchema),
-        boardFunctions.updateColumn,
-    );
-    router.delete(
-        "/columns/:columnId",
-        authFunctions.requireAuth,
-        validateRequest(columnIdSchema),
-        boardFunctions.removeColumn,
-    );
-
-    router.post(
-        "/boards/:boardId/tasks",
-        authFunctions.requireAuth,
-        validateRequest(createTaskSchema),
-        taskFunctions.create,
-    );
-    router.patch(
-        "/tasks/:taskId",
-        authFunctions.requireAuth,
-        validateRequest(updateTaskSchema),
-        taskFunctions.update,
-    );
-    router.delete(
-        "/tasks/:taskId",
-        authFunctions.requireAuth,
-        validateRequest(taskIdSchema),
-        taskFunctions.remove,
-    );
-
-    router.get("/tasks/:taskId/comments", authFunctions.requireAuth, validateRequest(taskCommentsSchema), collaborationFunctions.listComments);
-    router.post("/tasks/:taskId/comments", authFunctions.requireAuth, validateRequest(createCommentSchema), collaborationFunctions.createComment);
-    router.get("/workspaces/:workspaceId/channels", authFunctions.requireAuth, validateRequest(workspaceChannelsSchema), collaborationFunctions.listChannels);
-    router.post("/workspaces/:workspaceId/channels", authFunctions.requireAuth, validateRequest(createChannelSchema), collaborationFunctions.createChannel);
-    router.get("/channels/:channelId/messages", authFunctions.requireAuth, validateRequest(channelSchema), collaborationFunctions.listMessages);
-    router.post("/channels/:channelId/messages", authFunctions.requireAuth, validateRequest(createMessageSchema), collaborationFunctions.createMessage);
-    router.post("/channels/:channelId/read", authFunctions.requireAuth, validateRequest(channelSchema), collaborationFunctions.markChannelRead);
-    router.get("/notifications", authFunctions.requireAuth, collaborationFunctions.listNotifications);
-    router.patch("/notifications/:notificationId/read", authFunctions.requireAuth, validateRequest(notificationIdSchema), collaborationFunctions.readNotification);
-    router.patch("/notifications/read-all", authFunctions.requireAuth, collaborationFunctions.readAllNotifications);
-    router.get("/conversations", authFunctions.requireAuth, phaseThreeFunctions.conversations);
-    router.post("/conversations", authFunctions.requireAuth, validateRequest(createConversationSchema), phaseThreeFunctions.createConversation);
-    router.get("/conversations/:conversationId/messages", authFunctions.requireAuth, validateRequest(conversationSchema), phaseThreeFunctions.messages);
-    router.post("/conversations/:conversationId/messages", authFunctions.requireAuth, validateRequest(directMessageSchema), phaseThreeFunctions.send);
-    router.get("/workspaces/:workspaceId/search", authFunctions.requireAuth, validateRequest(workspaceQuerySchema), phaseThreeFunctions.search);
-    router.get("/workspaces/:workspaceId/calendar", authFunctions.requireAuth, validateRequest(calendarSchema), phaseThreeFunctions.calendar);
-    router.get("/workspaces/:workspaceId/analytics", authFunctions.requireAuth, validateRequest(workspaceOnlySchema), phaseThreeFunctions.analytics);
-    router.get("/workspaces/:workspaceId/activity", authFunctions.requireAuth, validateRequest(workspaceOnlySchema), phaseThreeFunctions.activity);
-    router.get("/tasks/:taskId/attachments", authFunctions.requireAuth, validateRequest(taskAttachmentSchema), phaseThreeFunctions.attachments);
-    router.post("/tasks/:taskId/attachments", authFunctions.requireAuth, phaseThreeFunctions.upload, phaseThreeFunctions.saveAttachment);
-
-    router.get(
+    router.use(
         "/health",
-        healthFunctions.checkHealth,
+        createHealthRouter(functions),
     );
 
     return router;

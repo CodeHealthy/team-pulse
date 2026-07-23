@@ -8,6 +8,7 @@ import {
 import { createApp } from "../src/app.js";
 import { createAuthFunctions } from "../src/functions/auth.js";
 import { createApiRouter } from "../src/routes/api-router.js";
+import { createRouteFunctionStubs } from "./support/route-function-stubs.js";
 
 function createMemoryModels() {
     const users = new Map();
@@ -87,8 +88,9 @@ function createTestApplication() {
 
     const authFunctions =
         createAuthFunctions({
-            UserModel,
-            RefreshSessionModel,
+            UserRepository: UserModel,
+            RefreshSessionRepository:
+                RefreshSessionModel,
             config: {
                 apiPrefix: "/api",
                 secureCookies: false,
@@ -102,19 +104,11 @@ function createTestApplication() {
             },
         });
 
-    const apiRouter = createApiRouter({
-        authFunctions,
-        healthFunctions: {
-            checkHealth(
-                _request,
-                response,
-            ) {
-                return response
-                    .status(501)
-                    .send();
-            },
-        },
-    });
+    const apiRouter = createApiRouter(
+        createRouteFunctionStubs({
+            authFunctions,
+        }),
+    );
 
     return createApp({
         config: {

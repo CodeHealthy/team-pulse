@@ -10,13 +10,13 @@ export function notFound(entity) {
 }
 
 export async function requireWorkspaceAccess({
-    WorkspaceMemberModel,
+    WorkspaceMemberRepository,
     workspaceId,
     userId,
     roles,
 }) {
     const membership =
-        await WorkspaceMemberModel.find(
+        await WorkspaceMemberRepository.findByWorkspaceAndUser(
             workspaceId,
             userId,
         );

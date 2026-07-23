@@ -52,18 +52,18 @@ export const columnIdSchema = z.object({
 });
 
 export function createBoardFunctions({
-    ProjectModel,
-    BoardModel,
-    BoardColumnModel,
-    TaskModel,
-    WorkspaceMemberModel,
+    ProjectRepository,
+    BoardRepository,
+    BoardColumnRepository,
+    TaskRepository,
+    WorkspaceMemberRepository,
 }) {
     async function accessWorkspace(
         workspaceId,
         userId,
     ) {
         return requireWorkspaceAccess({
-            WorkspaceMemberModel,
+            WorkspaceMemberRepository,
             workspaceId,
             userId,
         });
@@ -72,7 +72,7 @@ export function createBoardFunctions({
     async function get(request, response, next) {
         try {
             const project =
-                await ProjectModel.findById(
+                await ProjectRepository.findById(
                     request.validated.params
                         .projectId,
                 );
@@ -87,7 +87,7 @@ export function createBoardFunctions({
             );
 
             const board =
-                await BoardModel.findByProject(
+                await BoardRepository.findByProjectId(
                     project.id,
                 );
 
@@ -97,10 +97,10 @@ export function createBoardFunctions({
 
             const [columns, tasks] =
                 await Promise.all([
-                    BoardColumnModel.list(
+                    BoardColumnRepository.listByBoardId(
                         board.id,
                     ),
-                    TaskModel.list(board.id),
+                    TaskRepository.listByBoardId(board.id),
                 ]);
 
             return response.json({
@@ -124,7 +124,7 @@ export function createBoardFunctions({
     ) {
         try {
             const board =
-                await BoardModel.findById(
+                await BoardRepository.findById(
                     request.validated.params
                         .boardId,
                 );
@@ -139,7 +139,7 @@ export function createBoardFunctions({
             );
 
             const column =
-                await BoardColumnModel.create({
+                await BoardColumnRepository.create({
                     workspaceId:
                         board.workspaceId,
                     projectId: board.projectId,
@@ -147,7 +147,7 @@ export function createBoardFunctions({
                     name: request.validated.body
                         .name,
                     position:
-                        await BoardColumnModel.nextPosition(
+                        await BoardColumnRepository.getNextPosition(
                             board.id,
                         ),
                 });
@@ -172,7 +172,7 @@ export function createBoardFunctions({
             const { columnId } =
                 request.validated.params;
             const existing =
-                await BoardColumnModel.findById(
+                await BoardColumnRepository.findById(
                     columnId,
                 );
 
@@ -189,7 +189,7 @@ export function createBoardFunctions({
                 success: true,
                 data: {
                     column:
-                        await BoardColumnModel.update(
+                        await BoardColumnRepository.updateById(
                             columnId,
                             request.validated.body,
                         ),
@@ -209,7 +209,7 @@ export function createBoardFunctions({
             const { columnId } =
                 request.validated.params;
             const column =
-                await BoardColumnModel.findById(
+                await BoardColumnRepository.findById(
                     columnId,
                 );
 
@@ -222,10 +222,10 @@ export function createBoardFunctions({
                 request.auth.user.id,
             );
 
-            await TaskModel.removeFromColumn(
+            await TaskRepository.deleteByColumnId(
                 columnId,
             );
-            await BoardColumnModel.remove(
+            await BoardColumnRepository.deleteById(
                 columnId,
             );
 

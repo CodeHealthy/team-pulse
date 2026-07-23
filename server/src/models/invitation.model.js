@@ -23,7 +23,7 @@ const schema = new mongoose.Schema(
     { timestamps: true, versionKey: false },
 );
 
-const Document = mongoose.models.Invitation ?? mongoose.model("Invitation", schema);
+const InvitationModel = mongoose.models.Invitation ?? mongoose.model("Invitation", schema);
 
 function record(document) {
     return document
@@ -40,32 +40,35 @@ function record(document) {
         : null;
 }
 
-export class Invitation {
-    static async create(values) {
-        return record(await Document.create(values));
-    }
+export const invitationRepository = Object.freeze({
+    async create(values) {
+        return record(await InvitationModel.create(values));
+    },
 
-    static async list(workspaceId) {
-        return (await Document.find({ workspaceId }).sort({ createdAt: -1 }).exec()).map(record);
-    }
+    async listByWorkspaceId(workspaceId) {
+        const invitations = await InvitationModel.find({ workspaceId }).sort({ createdAt: -1 }).lean().exec();
+        return invitations.map(record);
+    },
 
-    static async findPendingByHash(tokenHash) {
+    async findPendingByTokenHash(tokenHash) {
         return record(
-            await Document.findOne({
+            await InvitationModel.findOne({
                 tokenHash,
                 acceptedAt: null,
                 expiresAt: { $gt: new Date() },
-            }).exec(),
+            }).lean().exec(),
         );
-    }
+    },
 
-    static async accept(id) {
+    async markAcceptedById(id) {
         return record(
-            await Document.findByIdAndUpdate(
+            await InvitationModel.findByIdAndUpdate(
                 id,
                 { acceptedAt: new Date() },
                 { new: true },
-            ).exec(),
+            ).lean().exec(),
         );
-    }
-}
+    },
+});
+
+export { InvitationModel };

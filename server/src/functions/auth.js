@@ -118,8 +118,8 @@ function tokenMatchesHash(token, expectedHash) {
  * logic stays together while model classes own database access.
  */
 export function createAuthFunctions({
-    UserModel,
-    RefreshSessionModel,
+    UserRepository,
+    RefreshSessionRepository,
     config,
 }) {
     const refreshCookiePath = `${config.apiPrefix}/auth`;
@@ -272,7 +272,7 @@ export function createAuthFunctions({
     async function createSession(user) {
         const tokens = issueTokenPair(user.id);
 
-        await RefreshSessionModel.create({
+        await RefreshSessionRepository.create({
             sessionId: tokens.sessionId,
             userId: user.id,
             tokenHash: tokens.refreshTokenHash,
@@ -295,7 +295,7 @@ export function createAuthFunctions({
             const { name, email, password } =
                 request.validated.body;
             const existingUser =
-                await UserModel.findByEmail(email);
+                await UserRepository.findByEmail(email);
 
             if (existingUser) {
                 throw new AppError({
@@ -315,7 +315,7 @@ export function createAuthFunctions({
             let user;
 
             try {
-                user = await UserModel.create({
+                user = await UserRepository.create({
                     name,
                     email,
                     passwordHash,
@@ -366,7 +366,7 @@ export function createAuthFunctions({
             const { email, password } =
                 request.validated.body;
             const user =
-                await UserModel.findByEmail(
+                await UserRepository.findByEmail(
                     email,
                     { includePassword: true },
                 );
@@ -428,7 +428,7 @@ export function createAuthFunctions({
             }
 
             const session =
-                await RefreshSessionModel.findById(
+                await RefreshSessionRepository.findById(
                     payload.sessionId,
                 );
 
@@ -448,7 +448,7 @@ export function createAuthFunctions({
                     session.tokenHash,
                 )
             ) {
-                await RefreshSessionModel.revoke(
+                await RefreshSessionRepository.revoke(
                     payload.sessionId,
                 );
 
@@ -457,12 +457,12 @@ export function createAuthFunctions({
                 );
             }
 
-            const user = await UserModel.findById(
+            const user = await UserRepository.findById(
                 payload.sub,
             );
 
             if (!user) {
-                await RefreshSessionModel.revoke(
+                await RefreshSessionRepository.revoke(
                     payload.sessionId,
                 );
                 throw authenticationError();
@@ -473,7 +473,7 @@ export function createAuthFunctions({
                 payload.sessionId,
             );
 
-            await RefreshSessionModel.rotate(
+            await RefreshSessionRepository.rotate(
                 payload.sessionId,
                 {
                     tokenHash:
@@ -542,7 +542,7 @@ export function createAuthFunctions({
             );
         }
 
-        const user = await UserModel.findById(
+        const user = await UserRepository.findById(
             payload.sub,
         );
         if (!user) {
@@ -580,7 +580,7 @@ export function createAuthFunctions({
                             refreshToken,
                         );
 
-                    await RefreshSessionModel.revoke(
+                    await RefreshSessionRepository.revoke(
                         payload.sessionId,
                     );
                 } catch {

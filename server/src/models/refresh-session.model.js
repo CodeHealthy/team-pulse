@@ -29,7 +29,7 @@ const refreshSessionSchema = new mongoose.Schema(
     },
 );
 
-const RefreshSessionDocument =
+const RefreshSessionModel =
     mongoose.models.RefreshSession ??
     mongoose.model(
         "RefreshSession",
@@ -40,14 +40,14 @@ const RefreshSessionDocument =
  * Represents server-side login sessions. Only hashed refresh
  * tokens are persisted so database access cannot expose tokens.
  */
-export class RefreshSession {
-    static async create(session) {
-        await RefreshSessionDocument.create(session);
-    }
+export const refreshSessionRepository = Object.freeze({
+    async create(session) {
+        await RefreshSessionModel.create(session);
+    },
 
-    static async findById(sessionId) {
+    async findById(sessionId) {
         const session =
-            await RefreshSessionDocument.findOne({
+            await RefreshSessionModel.findOne({
                 sessionId,
             })
                 .lean()
@@ -63,21 +63,23 @@ export class RefreshSession {
             tokenHash: session.tokenHash,
             expiresAt: session.expiresAt,
         };
-    }
+    },
 
-    static async rotate(
+    async rotate(
         sessionId,
         { tokenHash, expiresAt },
     ) {
-        await RefreshSessionDocument.updateOne(
+        await RefreshSessionModel.updateOne(
             { sessionId },
             { tokenHash, expiresAt },
         ).exec();
-    }
+    },
 
-    static async revoke(sessionId) {
-        await RefreshSessionDocument.deleteOne({
+    async revoke(sessionId) {
+        await RefreshSessionModel.deleteOne({
             sessionId,
         }).exec();
-    }
-}
+    },
+});
+
+export { RefreshSessionModel };

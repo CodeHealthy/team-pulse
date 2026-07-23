@@ -1312,3 +1312,543 @@ a:focus-visible {
   border-radius: 8px;
   padding: 10px;
 }
+
+/* Final interaction and responsive polish */
+:root {
+  --tp-control-height: 44px;
+  --tp-focus-ring: 0 0 0 4px rgba(79, 124, 255, 0.14);
+  --tp-surface-shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
+}
+
+button {
+  user-select: none;
+}
+
+button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.primary-button,
+.secondary-button {
+  display: inline-flex;
+  min-height: var(--tp-control-height);
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  padding-inline: 17px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.primary-button {
+  background-size: 160% 100%;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background-position 220ms ease;
+}
+
+.primary-button:hover:not(:disabled) {
+  background-position: 100% 0;
+}
+
+.secondary-button {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.secondary-button:hover:not(:disabled) {
+  border-color: #a9b8cc;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.07);
+  transform: translateY(-1px);
+}
+
+.nav-heading button,
+.modal-card > header button,
+.collaboration-panel > header button {
+  border-radius: 9px;
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.nav-heading button {
+  width: 28px;
+  height: 28px;
+}
+
+.nav-heading button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.modal-card > header button:hover,
+.collaboration-panel > header button:hover {
+  color: var(--tp-color-navy);
+  background: #e8edf4;
+}
+
+.product-form input:not([type="color"]),
+.product-form textarea,
+.product-form select,
+.invite-result input,
+.message-form input,
+.create-channel input,
+.direct-tools select {
+  min-height: var(--tp-control-height);
+  border-color: #d5deea;
+  outline: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background 150ms ease;
+}
+
+.product-form input:hover,
+.product-form textarea:hover,
+.product-form select:hover,
+.invite-result input:hover,
+.message-form input:hover,
+.create-channel input:hover,
+.direct-tools select:hover {
+  border-color: #b8c5d6;
+}
+
+.product-form input:focus,
+.product-form textarea:focus,
+.product-form select:focus,
+.invite-result input:focus,
+.message-form input:focus,
+.create-channel input:focus,
+.direct-tools select:focus {
+  border-color: var(--tp-color-blue);
+  box-shadow: var(--tp-focus-ring);
+}
+
+.product-form input[type="file"] {
+  min-height: auto;
+  border: 1px dashed #c6d2e2;
+  padding: 8px;
+  color: var(--tp-color-muted);
+  background: #f8fafc;
+}
+
+.product-form input[type="file"]::file-selector-button {
+  border: 0;
+  border-radius: 7px;
+  margin-right: 10px;
+  padding: 7px 10px;
+  color: var(--tp-color-blue-dark);
+  background: #eaf0ff;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.workspace-header .header-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.member-count {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 11px;
+  color: #526077;
+  background: #e9edf4;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.workspace-header .secondary-button {
+  min-height: 38px;
+  padding-inline: 13px;
+  font-size: 0.8rem;
+}
+
+.nav-item {
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.nav-item:hover {
+  transform: translateX(2px);
+}
+
+.nav-item.active {
+  box-shadow: inset 3px 0 var(--tp-color-cyan);
+}
+
+.kanban-board {
+  scroll-snap-type: x proximity;
+  scrollbar-color: #c3ccda transparent;
+  scrollbar-width: thin;
+}
+
+.kanban-column {
+  scroll-snap-align: start;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.kanban-column:has(.task-card:active) {
+  border-color: #adc0ff;
+}
+
+.task-card {
+  position: relative;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+}
+
+.task-card:focus-visible {
+  border-color: var(--tp-color-blue);
+  box-shadow: var(--tp-focus-ring);
+  outline: none;
+}
+
+.add-task-button {
+  min-height: 40px;
+  border: 1px dashed transparent;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease,
+    background 150ms ease;
+}
+
+.add-task-button:hover {
+  border-color: #c8d4e4;
+}
+
+.modal-backdrop {
+  animation: backdrop-in 160ms ease-out;
+}
+
+.modal-card {
+  animation: modal-in 190ms ease-out;
+}
+
+.modal-error {
+  margin: -8px 0 18px;
+}
+
+.collaboration-panel {
+  animation: panel-in 200ms ease-out;
+}
+
+.notification-list article,
+.tool-list article,
+.analytics-grid article {
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.notification-list article:hover,
+.tool-list article:hover,
+.analytics-grid article:hover {
+  border-color: #bdc9da;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+
+.channel-tabs {
+  scrollbar-width: none;
+}
+
+.channel-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.channel-tabs button {
+  min-height: 38px;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease,
+    background 150ms ease;
+}
+
+.form-error {
+  box-shadow: 0 5px 14px rgba(180, 35, 24, 0.06);
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
+@keyframes panel-in {
+  from { transform: translateX(100%); }
+}
+
+@media (max-width: 1180px) {
+  .product-main {
+    padding: 28px 28px 42px;
+  }
+
+  .workspace-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .workspace-header .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .kanban-board {
+    grid-auto-columns: minmax(280px, 42vw);
+  }
+}
+
+@media (max-width: 900px) {
+  .product-shell {
+    grid-template-columns: 210px minmax(0, 1fr);
+  }
+
+  .product-main {
+    padding-inline: 20px;
+  }
+
+  .workspace-header .header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-header .member-count {
+    grid-column: 1 / -1;
+    width: fit-content;
+  }
+
+  .workspace-header .secondary-button {
+    width: 100%;
+  }
+
+  .kanban-board {
+    grid-auto-columns: minmax(270px, 72vw);
+  }
+}
+
+@media (max-width: 760px) {
+  .workspace-header .header-actions {
+    display: flex;
+  }
+
+  .workspace-header .secondary-button {
+    width: auto;
+    flex: 1 1 calc(50% - 5px);
+  }
+
+  .kanban-column {
+    max-height: calc(100vh - 240px);
+  }
+
+  .modal-card {
+    width: min(100%, 560px);
+  }
+}
+
+@media (max-width: 600px) {
+  .product-shell {
+    display: block;
+    padding-bottom: 72px;
+  }
+
+  .product-sidebar {
+    position: fixed;
+    z-index: 70;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    width: 100%;
+    height: 68px;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
+    overflow-x: auto;
+    padding: 8px 10px;
+    box-shadow: 0 -8px 24px rgba(8, 18, 32, 0.2);
+  }
+
+  .product-sidebar > svg,
+  .nav-heading {
+    display: none;
+  }
+
+  .workspace-nav,
+  .project-nav {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 4px;
+    margin: 0;
+  }
+
+  .nav-item,
+  .nav-item.active,
+  .nav-item:not(.active) {
+    width: 46px;
+    min-height: 46px;
+    justify-content: center;
+    padding: 5px;
+    font-size: 0;
+  }
+
+  .nav-item:hover {
+    transform: none;
+  }
+
+  .nav-item.active {
+    box-shadow: inset 0 -3px var(--tp-color-cyan);
+  }
+
+  .workspace-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .project-color {
+    width: 25px;
+    height: 25px;
+    border-radius: 8px;
+  }
+
+  .sidebar-user {
+    display: flex;
+    flex: 0 0 auto;
+    margin: 0 0 0 auto;
+    padding: 0;
+  }
+
+  .product-main {
+    padding: 24px 14px 34px;
+  }
+
+  .workspace-header {
+    margin-bottom: 22px;
+  }
+
+  .workspace-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .workspace-header .header-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .workspace-header .member-count {
+    grid-column: 1 / -1;
+  }
+
+  .workspace-header .secondary-button {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 9px;
+    white-space: normal;
+  }
+
+  .board-toolbar {
+    position: sticky;
+    z-index: 5;
+    top: 0;
+    border-radius: 10px;
+    padding: 8px;
+    background: rgba(244, 246, 250, 0.94);
+    backdrop-filter: blur(10px);
+  }
+
+  .kanban-board {
+    grid-auto-columns: calc(100vw - 40px);
+    gap: 12px;
+  }
+
+  .kanban-column {
+    min-height: 440px;
+    max-height: calc(100vh - 300px);
+  }
+
+  .modal-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .modal-card {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 20px 20px 0 0;
+    padding: 22px 18px calc(22px + env(safe-area-inset-bottom));
+    animation-name: sheet-in;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions {
+    flex-wrap: wrap;
+  }
+
+  .modal-actions .primary-button {
+    flex: 1;
+  }
+
+  .collaboration-panel {
+    width: 100%;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .analytics-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .message-form {
+    position: sticky;
+    bottom: 0;
+    padding-top: 8px;
+    background: #fff;
+  }
+
+  .invitation-page section {
+    padding: 28px 20px;
+  }
+}
+
+@keyframes sheet-in {
+  from { transform: translateY(100%); }
+}
+
+@media (max-width: 380px) {
+  .workspace-header .header-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-header .member-count {
+    grid-column: auto;
+  }
+
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+}

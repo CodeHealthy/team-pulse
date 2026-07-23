@@ -7,7 +7,7 @@ import {
 
 import { logoutUser } from "../auth/auth-slice";
 import CollaborationPanel from "../collaboration/CollaborationPanel";
-import PhaseThreePanel from "../insights/PhaseThreePanel";
+import WorkspaceToolsPanel from "../insights/WorkspaceToolsPanel";
 import { apiRequest } from "../auth/auth-api";
 import {
   addComment,
@@ -25,6 +25,7 @@ import {
   createProject,
   createTask,
   createWorkspace,
+  clearWorkspaceError,
   clearInvitationToken,
   deleteTask,
   inviteMember,
@@ -142,6 +143,7 @@ export default function HomePage() {
     setModal(null);
     setEditingTaskId(null);
     setTaskForm(EMPTY_TASK);
+    dispatch(clearWorkspaceError());
   }
 
   function openNewTask(columnId) {
@@ -419,6 +421,7 @@ export default function HomePage() {
             column: "Add board column",
           }[modal]}
           onClose={closeModal}
+          error={workspace.error}
         >
           {modal === "workspace" && (
             <SimpleNameForm
@@ -519,7 +522,7 @@ export default function HomePage() {
       )}
       {sidePanel && (
         sidePanel === "insights" ? (
-          <PhaseThreePanel workspaceId={workspace.selectedWorkspaceId} members={workspace.members} onClose={() => setSidePanel(null)} />
+          <WorkspaceToolsPanel workspaceId={workspace.selectedWorkspaceId} members={workspace.members} onClose={() => setSidePanel(null)} />
         ) : (
           <CollaborationPanel mode={sidePanel} workspaceId={workspace.selectedWorkspaceId} onClose={() => setSidePanel(null)} />
         )
@@ -678,7 +681,24 @@ function Board({
   );
 }
 
-function Modal({ title, onClose, children }) {
+function Modal({
+  title,
+  onClose,
+  error,
+  children,
+}) {
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () =>
+      window.removeEventListener(
+        "keydown",
+        handleKeyDown,
+      );
+  }, [onClose]);
+
   return (
     <div
       className="modal-backdrop"
@@ -705,6 +725,14 @@ function Modal({ title, onClose, children }) {
             ×
           </button>
         </header>
+        {error && (
+          <p
+            className="form-error modal-error"
+            role="alert"
+          >
+            {error}
+          </p>
+        )}
         {children}
       </section>
     </div>

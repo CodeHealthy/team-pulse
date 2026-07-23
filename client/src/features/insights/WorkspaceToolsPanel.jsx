@@ -3,7 +3,11 @@ import { SOCKET_EVENTS } from "@teampulse/contracts/socket-events";
 import { apiRequest } from "../auth/auth-api";
 import { socket } from "../../realtime/socket";
 
-export default function PhaseThreePanel({ workspaceId, members, onClose }) {
+export default function WorkspaceToolsPanel({
+  workspaceId,
+  members,
+  onClose,
+}) {
   const [tab, setTab] = useState("analytics");
   const [data, setData] = useState(null);
   const [query, setQuery] = useState("");

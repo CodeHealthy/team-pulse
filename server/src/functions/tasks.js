@@ -104,12 +104,12 @@ export const taskIdSchema = z.object({
 });
 
 export function createTaskFunctions({
-    TaskModel,
-    BoardModel,
-    BoardColumnModel,
-    ActivityLogModel,
-    NotificationModel,
-    WorkspaceMemberModel,
+    TaskRepository,
+    BoardRepository,
+    BoardColumnRepository,
+    ActivityLogRepository,
+    NotificationRepository,
+    WorkspaceMemberRepository,
     bus,
 }) {
     async function validateAssignees(
@@ -119,7 +119,7 @@ export function createTaskFunctions({
         await Promise.all(
             assigneeIds.map(async (userId) => {
                 await requireWorkspaceAccess({
-                    WorkspaceMemberModel,
+                    WorkspaceMemberRepository,
                     workspaceId,
                     userId,
                 });
@@ -132,20 +132,20 @@ export function createTaskFunctions({
             const { boardId } =
                 request.validated.params;
             const board =
-                await BoardModel.findById(boardId);
+                await BoardRepository.findById(boardId);
 
             if (!board) {
                 throw notFound("Board");
             }
 
             await requireWorkspaceAccess({
-                WorkspaceMemberModel,
+                WorkspaceMemberRepository,
                 workspaceId: board.workspaceId,
                 userId: request.auth.user.id,
             });
 
             const column =
-                await BoardColumnModel.findById(
+                await BoardColumnRepository.findById(
                     request.validated.body
                         .columnId,
                 );
@@ -163,13 +163,13 @@ export function createTaskFunctions({
                     .assigneeIds,
             );
 
-            const task = await TaskModel.create({
+            const task = await TaskRepository.create({
                 ...request.validated.body,
                 workspaceId: board.workspaceId,
                 projectId: board.projectId,
                 boardId: board.id,
                 position:
-                    await TaskModel.nextPosition(
+                    await TaskRepository.getNextPosition(
                         column.id,
                     ),
                 createdBy:
@@ -181,7 +181,7 @@ export function createTaskFunctions({
                 SOCKET_EVENTS.TASK.CREATED,
                 { task },
             );
-            await ActivityLogModel.create({
+            await ActivityLogRepository.create({
                 workspaceId: task.workspaceId,
                 actorId: request.auth.user.id,
                 action: "task.created",
@@ -192,7 +192,7 @@ export function createTaskFunctions({
             for (const userId of task.assigneeIds) {
                 if (userId === request.auth.user.id) continue;
                 const notification =
-                    await NotificationModel.create({
+                    await NotificationRepository.create({
                         userId,
                         workspaceId: task.workspaceId,
                         type: "task_assigned",
@@ -224,14 +224,14 @@ export function createTaskFunctions({
             const { taskId } =
                 request.validated.params;
             const task =
-                await TaskModel.findById(taskId);
+                await TaskRepository.findById(taskId);
 
             if (!task) {
                 throw notFound("Task");
             }
 
             await requireWorkspaceAccess({
-                WorkspaceMemberModel,
+                WorkspaceMemberRepository,
                 workspaceId: task.workspaceId,
                 userId: request.auth.user.id,
             });
@@ -240,7 +240,7 @@ export function createTaskFunctions({
                 request.validated.body.columnId
             ) {
                 const column =
-                    await BoardColumnModel.findById(
+                    await BoardColumnRepository.findById(
                         request.validated.body
                             .columnId,
                     );
@@ -266,7 +266,7 @@ export function createTaskFunctions({
                 );
             }
 
-            const updated = await TaskModel.update(
+            const updated = await TaskRepository.updateById(
                 taskId,
                 request.validated.body,
             );
@@ -276,7 +276,7 @@ export function createTaskFunctions({
                 SOCKET_EVENTS.TASK.UPDATED,
                 { task: updated },
             );
-            await ActivityLogModel.create({
+            await ActivityLogRepository.create({
                 workspaceId: updated.workspaceId,
                 actorId: request.auth.user.id,
                 action: "task.updated",
@@ -293,7 +293,7 @@ export function createTaskFunctions({
                     previousAssignees.has(userId)
                 ) continue;
                 const notification =
-                    await NotificationModel.create({
+                    await NotificationRepository.create({
                         userId,
                         workspaceId: updated.workspaceId,
                         type: "task_assigned",
@@ -321,7 +321,7 @@ export function createTaskFunctions({
     async function remove(request, response, next) {
         try {
             const task =
-                await TaskModel.findById(
+                await TaskRepository.findById(
                     request.validated.params
                         .taskId,
                 );
@@ -331,17 +331,17 @@ export function createTaskFunctions({
             }
 
             await requireWorkspaceAccess({
-                WorkspaceMemberModel,
+                WorkspaceMemberRepository,
                 workspaceId: task.workspaceId,
                 userId: request.auth.user.id,
             });
-            await TaskModel.remove(task.id);
+            await TaskRepository.deleteById(task.id);
             bus.emitWorkspace(
                 task.workspaceId,
                 SOCKET_EVENTS.TASK.DELETED,
                 { taskId: task.id },
             );
-            await ActivityLogModel.create({
+            await ActivityLogRepository.create({
                 workspaceId: task.workspaceId,
                 actorId: request.auth.user.id,
                 action: "task.deleted",

@@ -4,38 +4,43 @@ import { createServer } from "node:http";
 import { createApp } from "./app.js";
 import { env } from "./config/env.js";
 import { createAuthFunctions } from "./functions/auth.js";
+import { createAttachmentFunctions } from "./functions/attachments.js";
 import { createBoardFunctions } from "./functions/boards.js";
+import { createConversationFunctions } from "./functions/conversations.js";
 import { createCollaborationFunctions } from "./functions/collaboration.js";
 import { createHealthFunctions } from "./functions/health.js";
 import { createInvitationFunctions } from "./functions/invitations.js";
 import { createProjectFunctions } from "./functions/projects.js";
-import { createPhaseThreeFunctions } from "./functions/phase-three.js";
 import { createRealtimeFunctions } from "./functions/realtime.js";
 import { createTaskFunctions } from "./functions/tasks.js";
 import { createWorkspaceFunctions } from "./functions/workspaces.js";
+import { createActivityFunctions } from "./functions/workspace-activity.js";
+import { createAnalyticsFunctions } from "./functions/workspace-analytics.js";
+import { createCalendarFunctions } from "./functions/workspace-calendar.js";
+import { createSearchFunctions } from "./functions/workspace-search.js";
 import { createMongooseDatabase } from "./infrastructure/database/mongoose-database.js";
 import { createJobService } from "./infrastructure/jobs/job-service.js";
 import { createSocketServer } from "./infrastructure/realtime/socket-server.js";
 import { createRealtimeBus } from "./infrastructure/realtime/realtime-bus.js";
 import { enableRedisScaling } from "./infrastructure/realtime/redis-scaling.js";
-import { ActivityLog } from "./models/activity-log.js";
-import { Attachment } from "./models/attachment.js";
-import { Board } from "./models/board.js";
-import { BoardColumn } from "./models/board-column.js";
-import { Channel } from "./models/channel.js";
-import { ChannelRead } from "./models/channel-read.js";
-import { Conversation } from "./models/conversation.js";
-import { DirectMessage } from "./models/direct-message.js";
-import { Invitation } from "./models/invitation.js";
-import { Message } from "./models/message.js";
-import { Notification } from "./models/notification.js";
-import { Project } from "./models/project.js";
-import { RefreshSession } from "./models/refresh-session.js";
-import { Task } from "./models/task.js";
-import { TaskComment } from "./models/task-comment.js";
-import { User } from "./models/user.js";
-import { Workspace } from "./models/workspace.js";
-import { WorkspaceMember } from "./models/workspace-member.js";
+import { activityLogRepository } from "./models/activity-log.model.js";
+import { attachmentRepository } from "./models/attachment.model.js";
+import { boardRepository } from "./models/board.model.js";
+import { boardColumnRepository } from "./models/board-column.model.js";
+import { channelRepository } from "./models/channel.model.js";
+import { channelReadRepository } from "./models/channel-read.model.js";
+import { conversationRepository } from "./models/conversation.model.js";
+import { directMessageRepository } from "./models/direct-message.model.js";
+import { invitationRepository } from "./models/invitation.model.js";
+import { messageRepository } from "./models/message.model.js";
+import { notificationRepository } from "./models/notification.model.js";
+import { projectRepository } from "./models/project.model.js";
+import { refreshSessionRepository } from "./models/refresh-session.model.js";
+import { taskRepository } from "./models/task.model.js";
+import { taskCommentRepository } from "./models/task-comment.model.js";
+import { userRepository } from "./models/user.model.js";
+import { workspaceRepository } from "./models/workspace.model.js";
+import { workspaceMemberRepository } from "./models/workspace-member.model.js";
 import { createApiRouter } from "./routes/api-router.js";
 
 const database = createMongooseDatabase(
@@ -49,8 +54,9 @@ const jobService = createJobService({
 });
 
 const authFunctions = createAuthFunctions({
-    UserModel: User,
-    RefreshSessionModel: RefreshSession,
+    UserRepository: userRepository,
+    RefreshSessionRepository:
+        refreshSessionRepository,
     config: {
         ...env.auth,
         apiPrefix: env.app.apiPrefix,
@@ -67,76 +73,126 @@ const healthFunctions =
 
 const workspaceFunctions =
     createWorkspaceFunctions({
-        WorkspaceModel: Workspace,
-        WorkspaceMemberModel: WorkspaceMember,
+        WorkspaceRepository: workspaceRepository,
+        WorkspaceMemberRepository:
+            workspaceMemberRepository,
     });
 
 const invitationFunctions =
     createInvitationFunctions({
-        InvitationModel: Invitation,
-        WorkspaceMemberModel: WorkspaceMember,
+        InvitationRepository: invitationRepository,
+        WorkspaceMemberRepository:
+            workspaceMemberRepository,
         jobService,
     });
 
 const projectFunctions =
     createProjectFunctions({
-        ProjectModel: Project,
-        BoardModel: Board,
-        BoardColumnModel: BoardColumn,
-        WorkspaceMemberModel: WorkspaceMember,
+        ProjectRepository: projectRepository,
+        BoardRepository: boardRepository,
+        BoardColumnRepository:
+            boardColumnRepository,
+        WorkspaceMemberRepository:
+            workspaceMemberRepository,
     });
 
 const boardFunctions = createBoardFunctions({
-    ProjectModel: Project,
-    BoardModel: Board,
-    BoardColumnModel: BoardColumn,
-    TaskModel: Task,
-    WorkspaceMemberModel: WorkspaceMember,
+    ProjectRepository: projectRepository,
+    BoardRepository: boardRepository,
+    BoardColumnRepository: boardColumnRepository,
+    TaskRepository: taskRepository,
+    WorkspaceMemberRepository:
+        workspaceMemberRepository,
 });
 
 const taskFunctions = createTaskFunctions({
-    ActivityLogModel: ActivityLog,
-    TaskModel: Task,
-    BoardModel: Board,
-    BoardColumnModel: BoardColumn,
-    NotificationModel: Notification,
-    WorkspaceMemberModel: WorkspaceMember,
+    ActivityLogRepository: activityLogRepository,
+    TaskRepository: taskRepository,
+    BoardRepository: boardRepository,
+    BoardColumnRepository: boardColumnRepository,
+    NotificationRepository: notificationRepository,
+    WorkspaceMemberRepository:
+        workspaceMemberRepository,
     bus: realtimeBus,
 });
 
 const collaborationFunctions =
     createCollaborationFunctions({
-        TaskModel: Task,
-        TaskCommentModel: TaskComment,
-        ChannelModel: Channel,
-        MessageModel: Message,
-        ChannelReadModel: ChannelRead,
-        NotificationModel: Notification,
-        WorkspaceMemberModel: WorkspaceMember,
+        TaskRepository: taskRepository,
+        TaskCommentRepository:
+            taskCommentRepository,
+        ChannelRepository: channelRepository,
+        MessageRepository: messageRepository,
+        ChannelReadRepository:
+            channelReadRepository,
+        NotificationRepository:
+            notificationRepository,
+        WorkspaceMemberRepository:
+            workspaceMemberRepository,
         bus: realtimeBus,
     });
 
-const phaseThreeFunctions =
-    createPhaseThreeFunctions({
-        ConversationModel: Conversation,
-        DirectMessageModel: DirectMessage,
-        ActivityLogModel: ActivityLog,
-        AttachmentModel: Attachment,
-        TaskModel: Task,
-        ProjectModel: Project,
-        WorkspaceMemberModel: WorkspaceMember,
+const conversationFunctions =
+    createConversationFunctions({
+        ConversationRepository:
+            conversationRepository,
+        DirectMessageRepository:
+            directMessageRepository,
+        WorkspaceMemberRepository:
+            workspaceMemberRepository,
         bus: realtimeBus,
+    });
+
+const attachmentFunctions =
+    createAttachmentFunctions({
+        AttachmentRepository: attachmentRepository,
+        TaskRepository: taskRepository,
+        WorkspaceMemberRepository:
+            workspaceMemberRepository,
         uploadDir: env.services.uploadDir,
     });
 
+const searchFunctions = createSearchFunctions({
+    TaskRepository: taskRepository,
+    ProjectRepository: projectRepository,
+    WorkspaceMemberRepository:
+        workspaceMemberRepository,
+});
+
+const calendarFunctions =
+    createCalendarFunctions({
+        TaskRepository: taskRepository,
+        WorkspaceMemberRepository:
+            workspaceMemberRepository,
+    });
+
+const analyticsFunctions =
+    createAnalyticsFunctions({
+        TaskRepository: taskRepository,
+        WorkspaceMemberRepository:
+            workspaceMemberRepository,
+    });
+
+const activityFunctions =
+    createActivityFunctions({
+        ActivityLogRepository: activityLogRepository,
+        WorkspaceMemberRepository:
+            workspaceMemberRepository,
+    });
+
 const apiRouter = createApiRouter({
+    activityFunctions,
+    analyticsFunctions,
     authFunctions,
+    attachmentFunctions,
     boardFunctions,
+    calendarFunctions,
     collaborationFunctions,
+    conversationFunctions,
     healthFunctions,
     invitationFunctions,
-    phaseThreeFunctions,
     projectFunctions,
+    searchFunctions,
     taskFunctions,
     workspaceFunctions,
 });
@@ -157,8 +213,9 @@ const socketServer = createSocketServer({
     realtimeBus,
     realtimeFunctions: createRealtimeFunctions({
         authFunctions,
-        WorkspaceMemberModel: WorkspaceMember,
-        ChannelModel: Channel,
+        WorkspaceMemberRepository:
+            workspaceMemberRepository,
+        ChannelRepository: channelRepository,
         bus: realtimeBus,
     }),
 });

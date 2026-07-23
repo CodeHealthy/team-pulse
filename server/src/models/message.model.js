@@ -10,7 +10,7 @@ const schema = new mongoose.Schema(
     { timestamps: true, versionKey: false },
 );
 schema.index({ channelId: 1, createdAt: -1 });
-const Document = mongoose.models.Message ?? mongoose.model("Message", schema);
+const MessageModel = mongoose.models.Message ?? mongoose.model("Message", schema);
 const record = (d) => d && ({
     id: d._id.toString(), workspaceId: d.workspaceId.toString(),
     channelId: d.channelId.toString(),
@@ -19,17 +19,19 @@ const record = (d) => d && ({
     content: d.content, createdAt: d.createdAt,
 });
 
-export class Message {
-    static async create(values) {
-        const message = await Document.create(values);
+export const messageRepository = Object.freeze({
+    async create(values) {
+        const message = await MessageModel.create(values);
         await message.populate("authorId", "name");
         return record(message);
-    }
-    static async list(channelId, limit = 50) {
-        const items = await Document.find({ channelId }).populate("authorId", "name").sort({ createdAt: -1 }).limit(limit).exec();
+    },
+    async listByChannelId(channelId, limit = 50) {
+        const items = await MessageModel.find({ channelId }).populate("authorId", "name").sort({ createdAt: -1 }).limit(limit).lean().exec();
         return items.reverse().map(record);
-    }
-    static async countSince(channelId, since) {
-        return Document.countDocuments({ channelId, createdAt: { $gt: since } });
-    }
-}
+    },
+    async countByChannelSince(channelId, since) {
+        return MessageModel.countDocuments({ channelId, createdAt: { $gt: since } });
+    },
+});
+
+export { MessageModel };

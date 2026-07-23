@@ -11,15 +11,20 @@ const schema = new mongoose.Schema(
     { timestamps: true, versionKey: false },
 );
 schema.index({ workspaceId: 1, name: 1 }, { unique: true });
-const Document = mongoose.models.Channel ?? mongoose.model("Channel", schema);
+const ChannelModel = mongoose.models.Channel ?? mongoose.model("Channel", schema);
 const record = (d) => d && ({
     id: d._id.toString(), workspaceId: d.workspaceId.toString(),
     projectId: d.projectId?.toString() ?? null, name: d.name,
     description: d.description, createdBy: d.createdBy.toString(), createdAt: d.createdAt,
 });
 
-export class Channel {
-    static async create(values) { return record(await Document.create(values)); }
-    static async list(workspaceId) { return (await Document.find({ workspaceId }).sort({ name: 1 }).exec()).map(record); }
-    static async findById(id) { return record(await Document.findById(id).exec()); }
-}
+export const channelRepository = Object.freeze({
+    async create(values) { return record(await ChannelModel.create(values)); },
+    async listByWorkspaceId(workspaceId) {
+        const channels = await ChannelModel.find({ workspaceId }).sort({ name: 1 }).lean().exec();
+        return channels.map(record);
+    },
+    async findById(id) { return record(await ChannelModel.findById(id).lean().exec()); },
+});
+
+export { ChannelModel };

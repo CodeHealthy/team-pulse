@@ -74,24 +74,24 @@ export const updateProjectSchema = z.object({
 });
 
 export function createProjectFunctions({
-    ProjectModel,
-    BoardModel,
-    BoardColumnModel,
-    WorkspaceMemberModel,
+    ProjectRepository,
+    BoardRepository,
+    BoardColumnRepository,
+    WorkspaceMemberRepository,
 }) {
     async function requireProject(
         projectId,
         userId,
     ) {
         const project =
-            await ProjectModel.findById(projectId);
+            await ProjectRepository.findById(projectId);
 
         if (!project) {
             throw notFound("Project");
         }
 
         await requireWorkspaceAccess({
-            WorkspaceMemberModel,
+            WorkspaceMemberRepository,
             workspaceId: project.workspaceId,
             userId,
         });
@@ -105,7 +105,7 @@ export function createProjectFunctions({
                 request.validated.params;
 
             await requireWorkspaceAccess({
-                WorkspaceMemberModel,
+                WorkspaceMemberRepository,
                 workspaceId,
                 userId: request.auth.user.id,
             });
@@ -114,7 +114,7 @@ export function createProjectFunctions({
                 success: true,
                 data: {
                     projects:
-                        await ProjectModel.list(
+                        await ProjectRepository.listByWorkspaceId(
                             workspaceId,
                         ),
                 },
@@ -130,19 +130,19 @@ export function createProjectFunctions({
                 request.validated.params;
 
             await requireWorkspaceAccess({
-                WorkspaceMemberModel,
+                WorkspaceMemberRepository,
                 workspaceId,
                 userId: request.auth.user.id,
             });
 
             const project =
-                await ProjectModel.create({
+                await ProjectRepository.create({
                     ...request.validated.body,
                     workspaceId,
                     createdBy:
                         request.auth.user.id,
                 });
-            const board = await BoardModel.create({
+            const board = await BoardRepository.create({
                 workspaceId,
                 projectId: project.id,
                 name: "Main board",
@@ -154,7 +154,7 @@ export function createProjectFunctions({
                 "Done",
             ];
             const columns =
-                await BoardColumnModel.createMany(
+                await BoardColumnRepository.createMany(
                     columnNames.map(
                         (name, position) => ({
                             workspaceId,
@@ -209,7 +209,7 @@ export function createProjectFunctions({
             );
 
             const project =
-                await ProjectModel.update(
+                await ProjectRepository.updateById(
                     projectId,
                     request.validated.body,
                 );

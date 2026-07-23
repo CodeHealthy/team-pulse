@@ -9,8 +9,8 @@ function readCookie(cookieHeader, name) {
 
 export function createRealtimeFunctions({
     authFunctions,
-    WorkspaceMemberModel,
-    ChannelModel,
+    WorkspaceMemberRepository,
+    ChannelRepository,
     bus,
 }) {
     const presence = new Map();
@@ -62,7 +62,7 @@ export function createRealtimeFunctions({
             async ({ workspaceId } = {}, acknowledge) => {
                 try {
                     const membership =
-                        await WorkspaceMemberModel.find(
+                        await WorkspaceMemberRepository.findByWorkspaceAndUser(
                             workspaceId,
                             socket.data.user.id,
                         );
@@ -112,12 +112,12 @@ export function createRealtimeFunctions({
             async ({ channelId } = {}, acknowledge) => {
                 try {
                     const channel =
-                        await ChannelModel.findById(
+                        await ChannelRepository.findById(
                             channelId,
                         );
                     const membership =
                         channel &&
-                        (await WorkspaceMemberModel.find(
+                        (await WorkspaceMemberRepository.findByWorkspaceAndUser(
                             channel.workspaceId,
                             socket.data.user.id,
                         ));

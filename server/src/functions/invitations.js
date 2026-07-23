@@ -47,8 +47,8 @@ function hashToken(token) {
 }
 
 export function createInvitationFunctions({
-    InvitationModel,
-    WorkspaceMemberModel,
+    InvitationRepository,
+    WorkspaceMemberRepository,
     jobService,
 }) {
     async function create(request, response, next) {
@@ -59,7 +59,7 @@ export function createInvitationFunctions({
                 request.validated.body;
 
             await requireWorkspaceAccess({
-                WorkspaceMemberModel,
+                WorkspaceMemberRepository,
                 workspaceId,
                 userId: request.auth.user.id,
                 roles: [
@@ -71,7 +71,7 @@ export function createInvitationFunctions({
             const token =
                 randomBytes(32).toString("hex");
             const invitation =
-                await InvitationModel.create({
+                await InvitationRepository.create({
                     workspaceId,
                     email,
                     role,
@@ -118,7 +118,7 @@ export function createInvitationFunctions({
                 request.validated.params;
 
             await requireWorkspaceAccess({
-                WorkspaceMemberModel,
+                WorkspaceMemberRepository,
                 workspaceId,
                 userId: request.auth.user.id,
                 roles: [
@@ -131,7 +131,7 @@ export function createInvitationFunctions({
                 success: true,
                 data: {
                     invitations:
-                        await InvitationModel.list(
+                        await InvitationRepository.listByWorkspaceId(
                             workspaceId,
                         ),
                 },
@@ -144,7 +144,7 @@ export function createInvitationFunctions({
     async function accept(request, response, next) {
         try {
             const invitation =
-                await InvitationModel.findPendingByHash(
+                await InvitationRepository.findPendingByTokenHash(
                     hashToken(
                         request.validated.params.token,
                     ),
@@ -174,14 +174,14 @@ export function createInvitationFunctions({
             }
 
             let membership =
-                await WorkspaceMemberModel.find(
+                await WorkspaceMemberRepository.findByWorkspaceAndUser(
                     invitation.workspaceId,
                     request.auth.user.id,
                 );
 
             if (!membership) {
                 membership =
-                    await WorkspaceMemberModel.create({
+                    await WorkspaceMemberRepository.create({
                         workspaceId:
                             invitation.workspaceId,
                         userId:
@@ -190,7 +190,7 @@ export function createInvitationFunctions({
                     });
             }
 
-            await InvitationModel.accept(
+            await InvitationRepository.markAcceptedById(
                 invitation.id,
             );
 

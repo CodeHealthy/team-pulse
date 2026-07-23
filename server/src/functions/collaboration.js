@@ -56,20 +56,20 @@ export const notificationIdSchema = z.object({
 });
 
 export function createCollaborationFunctions({
-    TaskModel,
-    TaskCommentModel,
-    ChannelModel,
-    MessageModel,
-    ChannelReadModel,
-    NotificationModel,
-    WorkspaceMemberModel,
+    TaskRepository,
+    TaskCommentRepository,
+    ChannelRepository,
+    MessageRepository,
+    ChannelReadRepository,
+    NotificationRepository,
+    WorkspaceMemberRepository,
     bus,
 }) {
     async function taskAccess(taskId, userId) {
-        const task = await TaskModel.findById(taskId);
+        const task = await TaskRepository.findById(taskId);
         if (!task) throw notFound("Task");
         await requireWorkspaceAccess({
-            WorkspaceMemberModel,
+            WorkspaceMemberRepository,
             workspaceId: task.workspaceId,
             userId,
         });
@@ -77,10 +77,10 @@ export function createCollaborationFunctions({
     }
 
     async function channelAccess(channelId, userId) {
-        const channel = await ChannelModel.findById(channelId);
+        const channel = await ChannelRepository.findById(channelId);
         if (!channel) throw notFound("Channel");
         await requireWorkspaceAccess({
-            WorkspaceMemberModel,
+            WorkspaceMemberRepository,
             workspaceId: channel.workspaceId,
             userId,
         });
@@ -92,7 +92,7 @@ export function createCollaborationFunctions({
             await taskAccess(request.validated.params.taskId, request.auth.user.id);
             return response.json({
                 success: true,
-                data: { comments: await TaskCommentModel.list(request.validated.params.taskId) },
+                data: { comments: await TaskCommentRepository.listByTaskId(request.validated.params.taskId) },
             });
         } catch (error) { return next(error); }
     }
@@ -100,7 +100,7 @@ export function createCollaborationFunctions({
     async function createComment(request, response, next) {
         try {
             const task = await taskAccess(request.validated.params.taskId, request.auth.user.id);
-            const comment = await TaskCommentModel.create({
+            const comment = await TaskCommentRepository.create({
                 workspaceId: task.workspaceId,
                 taskId: task.id,
                 authorId: request.auth.user.id,
@@ -111,7 +111,7 @@ export function createCollaborationFunctions({
             const recipients = new Set([task.createdBy, ...task.assigneeIds]);
             const mentions = request.validated.body.content.match(/@[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi) ?? [];
             if (mentions.length) {
-                const members = await WorkspaceMemberModel.listMembers(task.workspaceId);
+                const members = await WorkspaceMemberRepository.listByWorkspaceId(task.workspaceId);
                 for (const member of members) {
                     if (mentions.some((mention) => mention.slice(1).toLowerCase() === member.user?.email.toLowerCase())) {
                         recipients.add(member.userId);
@@ -120,7 +120,7 @@ export function createCollaborationFunctions({
             }
             recipients.delete(request.auth.user.id);
             for (const userId of recipients) {
-                const notification = await NotificationModel.create({
+                const notification = await NotificationRepository.create({
                     userId, workspaceId: task.workspaceId, type: "task_comment",
                     title: "New task comment", body: `${request.auth.user.name} commented on ${task.title}`,
                     entityType: "task", entityId: task.id,
@@ -134,11 +134,11 @@ export function createCollaborationFunctions({
     async function listChannels(request, response, next) {
         try {
             const { workspaceId } = request.validated.params;
-            await requireWorkspaceAccess({ WorkspaceMemberModel, workspaceId, userId: request.auth.user.id });
-            const channels = await ChannelModel.list(workspaceId);
+            await requireWorkspaceAccess({ WorkspaceMemberRepository, workspaceId, userId: request.auth.user.id });
+            const channels = await ChannelRepository.listByWorkspaceId(workspaceId);
             const enriched = await Promise.all(channels.map(async (channel) => {
-                const read = await ChannelReadModel.find(channel.id, request.auth.user.id);
-                return { ...channel, unreadCount: await MessageModel.countSince(channel.id, read?.lastReadAt ?? new Date(0)) };
+                const read = await ChannelReadRepository.findByChannelAndUser(channel.id, request.auth.user.id);
+                return { ...channel, unreadCount: await MessageRepository.countByChannelSince(channel.id, read?.lastReadAt ?? new Date(0)) };
             }));
             return response.json({ success: true, data: { channels: enriched } });
         } catch (error) { return next(error); }
@@ -147,8 +147,8 @@ export function createCollaborationFunctions({
     async function createChannel(request, response, next) {
         try {
             const { workspaceId } = request.validated.params;
-            await requireWorkspaceAccess({ WorkspaceMemberModel, workspaceId, userId: request.auth.user.id });
-            const channel = await ChannelModel.create({
+            await requireWorkspaceAccess({ WorkspaceMemberRepository, workspaceId, userId: request.auth.user.id });
+            const channel = await ChannelRepository.create({
                 ...request.validated.body, workspaceId, createdBy: request.auth.user.id,
             });
             return response.status(HTTP_STATUS.CREATED).json({ success: true, data: { channel: { ...channel, unreadCount: 0 } } });
@@ -159,8 +159,8 @@ export function createCollaborationFunctions({
         try {
             const { channelId } = request.validated.params;
             await channelAccess(channelId, request.auth.user.id);
-            await ChannelReadModel.mark(channelId, request.auth.user.id);
-            return response.json({ success: true, data: { messages: await MessageModel.list(channelId) } });
+            await ChannelReadRepository.markRead(channelId, request.auth.user.id);
+            return response.json({ success: true, data: { messages: await MessageRepository.listByChannelId(channelId) } });
         } catch (error) { return next(error); }
     }
 
@@ -168,11 +168,11 @@ export function createCollaborationFunctions({
         try {
             const { channelId } = request.validated.params;
             const channel = await channelAccess(channelId, request.auth.user.id);
-            const message = await MessageModel.create({
+            const message = await MessageRepository.create({
                 workspaceId: channel.workspaceId, channelId,
                 authorId: request.auth.user.id, content: request.validated.body.content,
             });
-            await ChannelReadModel.mark(channelId, request.auth.user.id);
+            await ChannelReadRepository.markRead(channelId, request.auth.user.id);
             bus.emitWorkspace(channel.workspaceId, SOCKET_EVENTS.MESSAGE.CREATED, { message });
             return response.status(HTTP_STATUS.CREATED).json({ success: true, data: { message } });
         } catch (error) { return next(error); }
@@ -182,26 +182,26 @@ export function createCollaborationFunctions({
         try {
             const { channelId } = request.validated.params;
             await channelAccess(channelId, request.auth.user.id);
-            await ChannelReadModel.mark(channelId, request.auth.user.id);
+            await ChannelReadRepository.markRead(channelId, request.auth.user.id);
             return response.status(HTTP_STATUS.NO_CONTENT).send();
         } catch (error) { return next(error); }
     }
 
     async function listNotifications(request, response, next) {
         try {
-            return response.json({ success: true, data: { notifications: await NotificationModel.list(request.auth.user.id) } });
+            return response.json({ success: true, data: { notifications: await NotificationRepository.listByUserId(request.auth.user.id) } });
         } catch (error) { return next(error); }
     }
     async function readNotification(request, response, next) {
         try {
-            const notification = await NotificationModel.read(request.validated.params.notificationId, request.auth.user.id);
+            const notification = await NotificationRepository.markReadById(request.validated.params.notificationId, request.auth.user.id);
             if (!notification) throw notFound("Notification");
             return response.json({ success: true, data: { notification } });
         } catch (error) { return next(error); }
     }
     async function readAllNotifications(request, response, next) {
         try {
-            await NotificationModel.readAll(request.auth.user.id);
+            await NotificationRepository.markAllReadByUserId(request.auth.user.id);
             return response.status(HTTP_STATUS.NO_CONTENT).send();
         } catch (error) { return next(error); }
     }
